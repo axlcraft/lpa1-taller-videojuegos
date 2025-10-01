@@ -1,0 +1,1 @@
+"""Mundo del juego y objetos."""

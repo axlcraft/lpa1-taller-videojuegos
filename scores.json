@@ -1,0 +1,58 @@
+[
+  {
+    "player_name": "axl",
+    "character_name": "ACORAZADO",
+    "character_type": "tank",
+    "score": 4570,
+    "level_reached": 11,
+    "date": "2025-09-30 23:24"
+  },
+  {
+    "player_name": "axl",
+    "character_name": "FRANCOTIRADOR",
+    "character_type": "sniper",
+    "score": 640,
+    "level_reached": 11,
+    "date": "2025-09-30 23:47"
+  },
+  {
+    "player_name": "a",
+    "character_name": "CAZA ESTELAR",
+    "character_type": "fighter",
+    "score": 635,
+    "level_reached": 4,
+    "date": "2025-10-01 00:18"
+  },
+  {
+    "player_name": "za",
+    "character_name": "ACORAZADO",
+    "character_type": "tank",
+    "score": 590,
+    "level_reached": 11,
+    "date": "2025-10-01 00:30"
+  },
+  {
+    "player_name": "z",
+    "character_name": "CAZA ESTELAR",
+    "character_type": "fighter",
+    "score": 340,
+    "level_reached": 2,
+    "date": "2025-10-01 00:28"
+  },
+  {
+    "player_name": "za",
+    "character_name": "EXPLORADOR",
+    "character_type": "scout",
+    "score": 40,
+    "level_reached": 10,
+    "date": "2025-10-01 00:28"
+  },
+  {
+    "player_name": "za",
+    "character_name": "FRANCOTIRADOR",
+    "character_type": "sniper",
+    "score": -60,
+    "level_reached": 10,
+    "date": "2025-10-01 00:29"
+  }
+]
