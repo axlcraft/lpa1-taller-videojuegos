@@ -928,7 +928,6 @@ def draw_space_hazard(screen: pygame.Surface, center: Tuple[int, int], hazard_ty
         pygame.draw.circle(screen, glow_color, (x, y), 12, 2)
         
         # Espiral
-        import math
         time = pygame.time.get_ticks() * 0.01
         for i in range(20):
             angle = i * 0.5 + time
@@ -972,7 +971,6 @@ def draw_space_hazard(screen: pygame.Surface, center: Tuple[int, int], hazard_ty
             pygame.draw.circle(screen, bright_red, (int(end_x), int(end_y)), 3)
     
     # Partículas de peligro alrededor
-    import random
     for i in range(int(2 + glow_intensity * 4)):
         if random.random() < 0.6:
             particle_angle = random.random() * 2 * math.pi

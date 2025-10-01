@@ -161,8 +161,8 @@ class Shop:
             if not item.purchased and player_gold >= item.price:
                 # Crear superficie con brillo
                 time = pygame.time.get_ticks() * 0.001
-                glow = 0.3 + 0.7 * math.sin(time * 3)
-                glow_color = (int(255 * glow), int(255 * glow), 0)
+                glow = 0.3 + 0.7 * abs(math.sin(time * 3))
+                glow_color = (int(min(255, max(0, 255 * glow))), int(min(255, max(0, 255 * glow))), 0)
                 
                 # Dibujar halo dorado alrededor del icono
                 for offset in [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1)]:
@@ -177,8 +177,8 @@ class Shop:
             if not item.purchased and player_gold >= item.price:
                 # Efecto pulsante en el bonus
                 time = pygame.time.get_ticks() * 0.001
-                pulse = 0.7 + 0.3 * math.sin(time * 4)
-                bonus_color = (0, int(255 * pulse), 0)
+                pulse = 0.7 + 0.3 * abs(math.sin(time * 4))
+                bonus_color = (0, int(min(255, max(0, 255 * pulse))), 0)
             
             bonus_text = self.font.render(f"+{item.bonus_value}", True, bonus_color)
             screen.blit(bonus_text, (x + 30, y + 75))
@@ -218,8 +218,8 @@ class Shop:
         
         if item.item_type == "health" or item.item_type == "max_health":
             # Efecto de salud - Pulso verde/rojo
-            pulse = 0.5 + 0.5 * math.sin(time * 3)
-            color = (int(255 * pulse), int(200 * pulse), int(100 * pulse))
+            pulse = 0.5 + 0.5 * abs(math.sin(time * 3))
+            color = (int(min(255, max(0, 255 * pulse))), int(min(255, max(0, 200 * pulse))), int(min(255, max(0, 100 * pulse))))
             
             # Cruz médica animada
             size = int(8 + pulse * 4)
@@ -235,8 +235,8 @@ class Shop:
         
         elif item.item_type == "attack":
             # Efecto de ataque - Espadas cruzadas con chispas
-            glow = 0.3 + 0.7 * math.sin(time * 4)
-            color = (int(255 * glow), int(150 * glow), 0)
+            glow = 0.3 + 0.7 * abs(math.sin(time * 4))
+            color = (int(min(255, max(0, 255 * glow))), int(min(255, max(0, 150 * glow))), 0)
             
             # Espadas cruzadas
             pygame.draw.line(screen, color, (center_x - 10, center_y - 10), (center_x + 10, center_y + 10), 3)
@@ -252,8 +252,8 @@ class Shop:
         
         elif item.item_type == "defense":
             # Efecto de defensa - Escudo hexagonal
-            shield_glow = 0.4 + 0.6 * math.sin(time * 2)
-            color = (0, int(150 * shield_glow), int(255 * shield_glow))
+            shield_glow = 0.4 + 0.6 * abs(math.sin(time * 2))
+            color = (0, int(min(255, max(0, 150 * shield_glow))), int(min(255, max(0, 255 * shield_glow))))
             
             # Hexágono del escudo
             points = []
@@ -272,8 +272,8 @@ class Shop:
         
         elif item.item_type == "speed":
             # Efecto de velocidad - Rayos de velocidad
-            speed_pulse = 0.2 + 0.8 * math.sin(time * 6)
-            color = (int(255 * speed_pulse), int(255 * speed_pulse), 0)
+            speed_pulse = 0.2 + 0.8 * abs(math.sin(time * 6))
+            color = (int(min(255, max(0, 255 * speed_pulse))), int(min(255, max(0, 255 * speed_pulse))), 0)
             
             # Rayos de velocidad hacia atrás
             for i in range(3):
@@ -290,7 +290,7 @@ class Shop:
         
         elif item.item_type == "invulnerability":
             # Efecto de invulnerabilidad - Aura brillante
-            aura_intensity = 0.3 + 0.7 * math.sin(time * 4)
+            aura_intensity = 0.3 + 0.7 * abs(math.sin(time * 4))
             
             # Múltiples capas de aura
             for radius in [15, 12, 9, 6]:
