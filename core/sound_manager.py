@@ -348,6 +348,215 @@ class SoundManager:
         combined = self._apply_envelope(combined, 0.05, 0.1, 0.6, 0.15)
         return pygame.sndarray.make_sound((combined * 32767).astype(np.int16))
     
+    def _generate_pickup(self) -> pygame.mixer.Sound:
+        """Genera sonido de recolección de objetos - alegre y positivo."""
+        duration = 0.4
+        frames = int(duration * 22050)
+        combined = np.zeros((frames, 2))
+        
+        for i in range(frames):
+            t = i / 22050
+            # Secuencia ascendente de notas
+            progress = t / duration
+            
+            if progress < 0.33:
+                freq = 523  # Do5
+            elif progress < 0.66:
+                freq = 659  # Mi5
+            else:
+                freq = 784  # Sol5
+            
+            # Amplitud que decrece suavemente
+            amp = 0.25 * (1.0 - progress * 0.5)
+            
+            # Onda principal con armónicos
+            wave = amp * math.sin(2 * math.pi * freq * t)
+            wave += amp * 0.3 * math.sin(2 * math.pi * freq * 2 * t)  # Octava
+            wave += amp * 0.15 * math.sin(2 * math.pi * freq * 3 * t)  # Quinta
+            
+            # Pequeña reverberación
+            if i > 1000:
+                wave += 0.1 * combined[i-1000][0]
+            
+            combined[i] = [wave, wave]
+            
+        combined = self._apply_envelope(combined, 0.02, 0.05, 0.8, 0.15)
+        return pygame.sndarray.make_sound((combined * 32767).astype(np.int16))
+    
+    def _generate_coin_pickup(self) -> pygame.mixer.Sound:
+        """Genera sonido de recolección de monedas - brillante y satisfactorio."""
+        duration = 0.5
+        frames = int(duration * 22050)
+        combined = np.zeros((frames, 2))
+        
+        for i in range(frames):
+            t = i / 22050
+            progress = t / duration
+            
+            # Secuencia de notas que suben (Do-Mi-Sol-Do octava)
+            if progress < 0.2:
+                freq = 523  # Do5
+            elif progress < 0.4:
+                freq = 659  # Mi5
+            elif progress < 0.7:
+                freq = 784  # Sol5
+            else:
+                freq = 1047  # Do6 (octava)
+            
+            # Amplitud que decrece gradualmente
+            amp = 0.3 * (1.0 - progress * 0.7)
+            
+            # Onda principal con armónicos dorados
+            wave = amp * math.sin(2 * math.pi * freq * t)
+            wave += amp * 0.4 * math.sin(2 * math.pi * freq * 2 * t)  # Octava
+            wave += amp * 0.2 * math.sin(2 * math.pi * freq * 4 * t)  # Cuarta octava
+            
+            # Efecto de tintineo
+            tinkle = 0.1 * amp * math.sin(2 * math.pi * freq * 8 * t) * math.exp(-t * 5)
+            wave += tinkle
+            
+            # Reverb ligero
+            if i > 500:
+                wave += 0.15 * combined[i-500][0]
+                
+            combined[i] = [wave, wave]
+            
+        combined = self._apply_envelope(combined, 0.01, 0.03, 0.9, 0.2)
+        return pygame.sndarray.make_sound((combined * 32767).astype(np.int16))
+    
+    def _generate_powerup_pickup(self) -> pygame.mixer.Sound:
+        """Genera sonido de recolección de power-ups - épico y poderoso."""
+        duration = 0.8
+        frames = int(duration * 22050)
+        combined = np.zeros((frames, 2))
+        
+        for i in range(frames):
+            t = i / 22050
+            progress = t / duration
+            
+            # Acordes ascendentes potentes
+            if progress < 0.3:
+                freqs = [220, 277, 330]  # Acorde Am
+            elif progress < 0.6:
+                freqs = [261, 329, 392]  # Acorde C
+            else:
+                freqs = [349, 440, 523]  # Acorde F
+            
+            # Amplitud con pico en el medio
+            amp = 0.25 * math.sin(math.pi * progress)
+            
+            wave = 0
+            for j, freq in enumerate(freqs):
+                # Cada nota con diferente peso
+                note_amp = amp * (0.8 if j == 0 else 0.6 if j == 1 else 0.4)
+                wave += note_amp * math.sin(2 * math.pi * freq * t)
+                
+            # Efecto de energía creciente
+            energy = 0.15 * math.sin(2 * math.pi * 1000 * t) * progress
+            wave += energy
+            
+            # Reverb espacial
+            if i > 1000:
+                wave += 0.2 * combined[i-1000][0]
+                
+            combined[i] = [wave, wave]
+            
+        combined = self._apply_envelope(combined, 0.05, 0.1, 0.7, 0.3)
+        return pygame.sndarray.make_sound((combined * 32767).astype(np.int16))
+    
+    def _generate_level_up(self) -> pygame.mixer.Sound:
+        """Genera sonido de subida de nivel - triunfante y épico."""
+        duration = 1.5
+        frames = int(duration * 22050)
+        combined = np.zeros((frames, 2))
+        
+        for i in range(frames):
+            t = i / 22050
+            progress = t / duration
+            
+            # Progresión triunfante: Do-Fa-Sol-Do octava
+            if progress < 0.25:
+                base_freq = 261  # Do4
+            elif progress < 0.5:
+                base_freq = 349  # Fa4
+            elif progress < 0.75:
+                base_freq = 392  # Sol4
+            else:
+                base_freq = 523  # Do5
+            
+            # Amplitud que crece y luego decrece
+            if progress < 0.8:
+                amp = 0.3 * (progress / 0.8)
+            else:
+                amp = 0.3 * (1.0 - (progress - 0.8) / 0.2)
+            
+            # Onda principal con armónicos ricos
+            wave = amp * math.sin(2 * math.pi * base_freq * t)
+            wave += amp * 0.6 * math.sin(2 * math.pi * base_freq * 2 * t)  # Octava
+            wave += amp * 0.3 * math.sin(2 * math.pi * base_freq * 3 * t)  # Quinta
+            
+            # Coro de fondo (quinta perfecta)
+            harmony_freq = base_freq * 1.5  # Quinta perfecta
+            wave += amp * 0.4 * math.sin(2 * math.pi * harmony_freq * t)
+            
+            # Efectos de brillo
+            sparkle = 0.1 * amp * math.sin(2 * math.pi * base_freq * 4 * t) * math.sin(t * 8)
+            wave += sparkle
+            
+            # Reverb épico
+            if i > 2000:
+                wave += 0.25 * combined[i-2000][0]
+                
+            combined[i] = [wave, wave]
+            
+        combined = self._apply_envelope(combined, 0.1, 0.2, 0.6, 0.4)
+        return pygame.sndarray.make_sound((combined * 32767).astype(np.int16))
+    
+    def _generate_background_ambient(self) -> pygame.mixer.Sound:
+        """Genera música de fondo ambiental para el juego."""
+        duration = 30.0  # 30 segundos de loop
+        frames = int(duration * 22050)
+        combined = np.zeros((frames, 2))
+        
+        for i in range(frames):
+            t = i / 22050
+            
+            # Base rítmica suave
+            bass_freq = 55  # La grave
+            bass_wave = 0.15 * math.sin(2 * math.pi * bass_freq * t)
+            bass_wave += 0.1 * math.sin(2 * math.pi * bass_freq * 2 * t)
+            
+            # Pad atmosférico
+            pad_freq1 = 220 * (1 + 0.05 * math.sin(2 * math.pi * 0.1 * t))  # Modulación lenta
+            pad_freq2 = 330 * (1 + 0.03 * math.sin(2 * math.pi * 0.07 * t))
+            
+            pad_wave = 0.08 * math.sin(2 * math.pi * pad_freq1 * t)
+            pad_wave += 0.06 * math.sin(2 * math.pi * pad_freq2 * t)
+            
+            # Efectos espaciales esporádicos
+            if random.random() < 0.001:  # Muy ocasional
+                space_freq = random.uniform(800, 1200)
+                space_effect = 0.05 * math.sin(2 * math.pi * space_freq * t) * math.exp(-t * 0.5)
+                pad_wave += space_effect
+            
+            # Combinar todo
+            wave = bass_wave + pad_wave
+            
+            # Filtro suave para evitar harshness
+            if i > 0:
+                wave = 0.7 * wave + 0.3 * combined[i-1][0]
+                
+            combined[i] = [wave, wave]
+            
+        # Aplicar fade in/out para loop seamless
+        fade_frames = 22050  # 1 segundo
+        for i in range(fade_frames):
+            fade_mult = i / fade_frames
+            combined[i] *= fade_mult
+            combined[-(i+1)] *= fade_mult
+            
+        return pygame.sndarray.make_sound((combined * 32767).astype(np.int16))
+    
     def _generate_boss_laser(self) -> pygame.mixer.Sound:
         """Genera sonido de láser de boss - intenso y amenazante."""
         duration = 1.2
@@ -566,6 +775,11 @@ class SoundManager:
         self.sounds['level_victory'] = self._generate_level_victory()
         self.sounds['super_shot'] = self._generate_super_shot()
         self.sounds['character_select'] = self._generate_character_select()
+        self.sounds['pickup'] = self._generate_pickup()
+        self.sounds['coin_pickup'] = self._generate_coin_pickup()
+        self.sounds['powerup_pickup'] = self._generate_powerup_pickup()
+        self.sounds['level_up'] = self._generate_level_up()
+        self.sounds['background_ambient'] = self._generate_background_ambient()
         self.sounds['boss_laser'] = self._generate_boss_laser()
         self.sounds['boss_defeat'] = self._generate_boss_defeat()
         self.sounds['ambient_space'] = self._generate_ambient_space()

@@ -47,12 +47,19 @@ class Escenario:
             n_power_ups: Número de power-ups (ventajas) a generar
             n_hazards: Número de peligros (desventajas) a generar
         """
-        # Generar enemigos
+        # Generar enemigos con mayor variedad
         self.enemies = []
         for _ in range(n_enemies):
             x = random.uniform(50, self.width - 50)
             y = random.uniform(50, self.height - 50)
-            tipo = random.choice(["terrestre", "volador"])
+            # Más tipos de enemigos con diferentes probabilidades
+            rand_val = random.random()
+            if rand_val < 0.5:
+                tipo = "terrestre"  # 50% - Enemigos tanque
+            elif rand_val < 0.8:
+                tipo = "volador"    # 30% - Enemigos rápidos que disparan
+            else:
+                tipo = "artillero"  # 20% - Enemigos que se mantienen a distancia
             self.enemies.append(Enemigo(x, y, tipo))
         
         # Generar tesoros

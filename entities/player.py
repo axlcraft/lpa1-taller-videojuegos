@@ -68,6 +68,20 @@ class Jugador(Figura):
         self.max_super_charges = 4   # Necesita 4 kills para recargar
         self.super_shot_cooldown = 2.0  # Cooldown del super disparo
         self._super_shot_timer = 0.0
+        
+        # Sistema de armas mejorado
+        from core.weapon_system import WeaponFactory, WeaponType
+        self.current_weapon = WeaponFactory.create_weapon(WeaponType.BASIC)
+        
+        # Sistema de efectos activos
+        self.active_effects = {}
+        self.shield = 0
+        self.max_shield = 200
+        
+        # Estadísticas para efectos
+        self.base_move_speed = self.move_speed
+        self.base_shoot_cooldown = self.shoot_cooldown
+        self.base_attack = self.attack
 
     def update_timers(self, dt: float) -> None:
         """
@@ -79,25 +93,119 @@ class Jugador(Figura):
         self._shoot_timer = max(0.0, self._shoot_timer - dt)
         self._inv_timer = max(0.0, self._inv_timer - dt)
         self._super_shot_timer = max(0.0, self._super_shot_timer - dt)
+        
+        # Actualizar arma
+        self.current_weapon.update(dt)
+        
+        # Actualizar efectos activos
+        self._update_active_effects(dt)
+        
+    def _update_active_effects(self, dt: float) -> None:
+        """Actualiza los efectos activos del jugador."""
+        expired_effects = []
+        
+        for effect_type, effect_data in self.active_effects.items():
+            effect_data['duration'] -= dt
+            if effect_data['duration'] <= 0:
+                expired_effects.append(effect_type)
+                
+        # Remover efectos expirados y revertir sus efectos
+        for effect_type in expired_effects:
+            self._remove_effect(effect_type)
+            
+    def _remove_effect(self, effect_type: str) -> None:
+        """Remueve un efecto específico."""
+        if effect_type in self.active_effects:
+            del self.active_effects[effect_type]
+            
+        # Recalcular estadísticas
+        self._recalculate_stats()
+        
+    def _recalculate_stats(self) -> None:
+        """Recalcula las estadísticas basándose en los efectos activos."""
+        # Resetear a valores base
+        self.move_speed = self.base_move_speed
+        self.shoot_cooldown = self.base_shoot_cooldown
+        self.attack = self.base_attack
+        
+        # Aplicar efectos activos
+        for effect_type, effect_data in self.active_effects.items():
+            value = effect_data['value']
+            
+            if effect_type == "speed":
+                self.move_speed = self.base_move_speed * (1 + value / 100)
+            elif effect_type == "rapid_fire":
+                self.shoot_cooldown = self.base_shoot_cooldown * (1 - value / 100)
+            elif effect_type == "damage":
+                self.attack = int(self.base_attack * (1 + value / 100))
 
     def can_shoot(self) -> bool:
         """Verifica si el jugador puede disparar."""
-        return self._shoot_timer <= 0.0
+        return self.current_weapon.can_shoot()
 
-    def shoot(self, target_pos: Vector2D) -> Optional[Proyectil]:
+    def shoot(self, target_pos: Vector2D) -> List[Proyectil]:
         """
-        Dispara un proyectil hacia la posición objetivo.
+        Dispara proyectiles hacia la posición objetivo.
         
         Args:
             target_pos: Posición objetivo del disparo
             
         Returns:
-            Proyectil creado o None si no puede disparar
+            Lista de proyectiles creados
         """
         if not self.can_shoot():
-            return None
+            return []
+            
+        # Calcular dirección
         dir_vec = Vector2D(target_pos.x - self.pos.x, target_pos.y - self.pos.y)
-        proj = Proyectil(self.pos.x, self.pos.y, dir_vec, speed=480.0, damage=self.attack // 1)
+        direction = dir_vec.normalized()
+        
+        # Disparar con el arma actual
+        projectiles = self.current_weapon.shoot(self.pos, direction, "player")
+        
+        # Aplicar efectos especiales
+        modified_projectiles = []
+        for projectile in projectiles:
+            # Aplicar bonificación de daño
+            projectile.damage = int(projectile.damage * (self.attack / self.base_attack))
+            
+            # Aplicar efectos de multi-shot
+            if "multi_shot" in self.active_effects:
+                multi_projectiles = self._create_multi_shot(projectile, direction)
+                modified_projectiles.extend(multi_projectiles)
+            else:
+                modified_projectiles.append(projectile)
+                
+            # Aplicar efectos especiales
+            for effect_type in self.active_effects:
+                if effect_type == "penetrating":
+                    projectile.special_effect = "penetrating"
+                elif effect_type == "explosive":
+                    projectile.special_effect = "explosive"
+                    
+        return modified_projectiles
+        
+    def _create_multi_shot(self, base_projectile: Proyectil, direction: Vector2D) -> List[Proyectil]:
+        """Crea proyectiles múltiples basados en el efecto multi-shot."""
+        import math
+        projectiles = [base_projectile]
+        
+        # Crear proyectiles adicionales con ángulos ligeramente diferentes
+        angle_spread = math.pi / 12  # 15 grados
+        for i in [-1, 1]:  # Izquierda y derecha
+            angle = math.atan2(direction.y, direction.x) + (i * angle_spread)
+            new_direction = Vector2D(math.cos(angle), math.sin(angle))
+            
+            extra_projectile = Proyectil(
+                base_projectile.pos.x, base_projectile.pos.y,
+                new_direction.x * (base_projectile.vel_x**2 + base_projectile.vel_y**2)**0.5,
+                new_direction.y * (base_projectile.vel_x**2 + base_projectile.vel_y**2)**0.5,
+                int(base_projectile.damage * 0.8), base_projectile.owner_type,
+                base_projectile.color
+            )
+            projectiles.append(extra_projectile)
+            
+        return projectiles
         self._shoot_timer = self.shoot_cooldown
         return proj
         
@@ -153,20 +261,30 @@ class Jugador(Figura):
 
     def receive_damage(self, amount: int) -> int:
         """
-        Recibe daño aplicando defensa e invulnerabilidad.
+        Recibe daño aplicando defensa, escudo e invulnerabilidad.
         
         Args:
             amount: Cantidad de daño recibido
             
         Returns:
-            Daño final aplicado
+            Daño final aplicado a la salud
         """
         if self._inv_timer > 0:
             return 0
-        damage_final = max(0, amount - self.defense)
-        self.hp -= damage_final
+            
+        damage_after_defense = max(0, amount - self.defense)
+        
+        # Aplicar daño al escudo primero
+        if self.shield > 0:
+            shield_damage = min(self.shield, damage_after_defense)
+            self.shield -= shield_damage
+            damage_after_defense -= shield_damage
+            
+        # Aplicar daño restante a la salud
+        self.hp -= damage_after_defense
         self._inv_timer = self.invulnerable_time
-        return damage_final
+        
+        return damage_after_defense
 
     def gain_xp(self, amount: int) -> bool:
         """
@@ -189,3 +307,56 @@ class Jugador(Figura):
             self.xp_to_next = int(self.xp_to_next * 1.4)
             leveled = True
         return leveled
+        
+    def change_weapon(self, weapon_type: str) -> None:
+        """
+        Cambia el arma actual del jugador.
+        
+        Args:
+            weapon_type: Tipo de arma a equipar
+        """
+        from core.weapon_system import WeaponFactory
+        self.current_weapon = WeaponFactory.create_weapon(weapon_type)
+        
+    def add_effect(self, effect_type: str, duration: float, value: int, name: str) -> None:
+        """
+        Añade un efecto temporal al jugador.
+        
+        Args:
+            effect_type: Tipo de efecto
+            duration: Duración del efecto
+            value: Valor del efecto
+            name: Nombre del efecto
+        """
+        self.active_effects[effect_type] = {
+            'duration': duration,
+            'value': value,
+            'name': name
+        }
+        self._recalculate_stats()
+        
+    def has_effect(self, effect_type: str) -> bool:
+        """
+        Verifica si el jugador tiene un efecto activo.
+        
+        Args:
+            effect_type: Tipo de efecto a verificar
+            
+        Returns:
+            True si tiene el efecto activo
+        """
+        return effect_type in self.active_effects
+        
+    def get_effect_time_remaining(self, effect_type: str) -> float:
+        """
+        Obtiene el tiempo restante de un efecto.
+        
+        Args:
+            effect_type: Tipo de efecto
+            
+        Returns:
+            Tiempo restante en segundos, 0 si no tiene el efecto
+        """
+        if effect_type in self.active_effects:
+            return self.active_effects[effect_type]['duration']
+        return 0.0

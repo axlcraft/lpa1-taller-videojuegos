@@ -40,6 +40,14 @@
     "date": "2025-10-01 00:28"
   },
   {
+    "player_name": "axl",
+    "character_name": "FRANCOTIRADOR",
+    "character_type": "sniper",
+    "score": 165,
+    "level_reached": 1,
+    "date": "2025-10-10 18:22"
+  },
+  {
     "player_name": "za",
     "character_name": "EXPLORADOR",
     "character_type": "scout",

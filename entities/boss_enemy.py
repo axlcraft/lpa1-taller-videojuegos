@@ -198,12 +198,15 @@ class BossEnemy(Enemigo):
                 self.pos.y + direction.y * offset
             )
             
+            laser_speed = 400.0
             laser_projectile = Proyectil(
                 proj_pos.x,
                 proj_pos.y,
-                direction,
-                speed=400.0,  # Fast laser speed
-                damage=self.attack
+                direction.x * laser_speed,
+                direction.y * laser_speed,
+                self.attack,
+                "enemy",  # owner_type
+                (255, 0, 0)  # Color rojo para láser de boss
             )
             laser_projectile.is_laser = True  # Mark as laser for visual effects
             projectiles.append(laser_projectile)
