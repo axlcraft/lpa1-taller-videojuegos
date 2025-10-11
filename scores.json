@@ -24,6 +24,14 @@
     "date": "2025-10-01 00:18"
   },
   {
+    "player_name": "axl",
+    "character_name": "ACORAZADO",
+    "character_type": "tank",
+    "score": 635,
+    "level_reached": 11,
+    "date": "2025-10-10 20:20"
+  },
+  {
     "player_name": "za",
     "character_name": "ACORAZADO",
     "character_type": "tank",
@@ -46,6 +54,14 @@
     "score": 165,
     "level_reached": 1,
     "date": "2025-10-10 18:22"
+  },
+  {
+    "player_name": "axl",
+    "character_name": "FRANCOTIRADOR",
+    "character_type": "sniper",
+    "score": 110,
+    "level_reached": 10,
+    "date": "2025-10-10 20:16"
   },
   {
     "player_name": "za",

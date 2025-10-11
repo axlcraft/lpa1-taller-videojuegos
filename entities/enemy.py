@@ -166,8 +166,8 @@ class Enemigo(Figura):
             self.pos.x, self.pos.y,
             new_x * projectile_speed,
             new_y * projectile_speed,
-            self.attack, "enemy",
-            (255, 100, 100)  # Color rojo para proyectiles enemigos
+            damage=int(self.attack), owner_type="enemy",
+            color=(255, 100, 100)
         )
         
         projectiles.append(projectile)

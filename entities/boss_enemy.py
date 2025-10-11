@@ -204,9 +204,8 @@ class BossEnemy(Enemigo):
                 proj_pos.y,
                 direction.x * laser_speed,
                 direction.y * laser_speed,
-                self.attack,
-                "enemy",  # owner_type
-                (255, 0, 0)  # Color rojo para láser de boss
+                damage=int(self.attack), owner_type="enemy",
+                color=(255, 0, 0)
             )
             laser_projectile.is_laser = True  # Mark as laser for visual effects
             projectiles.append(laser_projectile)

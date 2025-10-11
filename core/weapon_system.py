@@ -95,7 +95,7 @@ class Weapon:
             pos.x, pos.y,
             direction.x * self.projectile_speed,
             direction.y * self.projectile_speed,
-            self.damage, owner_type, self.projectile_color
+            damage=int(self.damage), owner_type=owner_type, color=self.projectile_color
         )
         return [projectile]
         
@@ -106,7 +106,7 @@ class Weapon:
             pos.x, pos.y,
             direction.x * self.projectile_speed * speed_mult,
             direction.y * self.projectile_speed * speed_mult,
-            self.damage, owner_type, self.projectile_color
+            damage=int(self.damage), owner_type=owner_type, color=self.projectile_color
         )
         return [projectile]
         
@@ -130,7 +130,7 @@ class Weapon:
                 pos.x, pos.y,
                 pellet_dir.x * self.projectile_speed * 0.9,
                 pellet_dir.y * self.projectile_speed * 0.9,
-                damage_reduced, owner_type, self.projectile_color
+                damage=int(damage_reduced), owner_type=owner_type, color=self.projectile_color
             )
             projectiles.append(projectile)
             
@@ -143,7 +143,7 @@ class Weapon:
             pos.x, pos.y,
             direction.x * self.projectile_speed * speed_mult,
             direction.y * self.projectile_speed * speed_mult,
-            self.damage, owner_type, self.projectile_color
+            damage=int(self.damage), owner_type=owner_type, color=self.projectile_color
         )
         # Marcar como láser para efectos especiales
         projectile.special_effect = "laser"
@@ -155,7 +155,7 @@ class Weapon:
             pos.x, pos.y,
             direction.x * self.projectile_speed,
             direction.y * self.projectile_speed,
-            self.damage, owner_type, self.projectile_color
+            damage=int(self.damage), owner_type=owner_type, color=self.projectile_color
         )
         # Marcar como plasma para efectos especiales
         projectile.special_effect = "plasma"
@@ -168,7 +168,7 @@ class Weapon:
             pos.x, pos.y,
             direction.x * self.projectile_speed * 0.8,
             direction.y * self.projectile_speed * 0.8,
-            int(self.damage * 1.5), owner_type, self.projectile_color
+            damage=int(self.damage * 1.5), owner_type=owner_type, color=self.projectile_color
         )
         # Marcar como misil para efectos especiales
         projectile.special_effect = "explosive"

@@ -12,8 +12,8 @@ from config.settings import PROJECTILE_RADIUS, COLORS
 class Proyectil(Figura):
     """Proyectil disparado por jugadores o enemigos."""
 
-    def __init__(self, x: float, y: float, vel_x: float, vel_y: float, 
-                 damage: int = 10, owner_type: str = "player", 
+    def __init__(self, x: float, y: float, direction_or_vel_x, vel_y=None, 
+                 speed: float = None, damage: int = 10, owner_type: str = "player", 
                  color: Optional[Tuple[int, int, int]] = None):
         """
         Inicializa un proyectil.
@@ -21,17 +21,26 @@ class Proyectil(Figura):
         Args:
             x: Posición X inicial
             y: Posición Y inicial
-            vel_x: Velocidad X del proyectil
-            vel_y: Velocidad Y del proyectil
+            direction_or_vel_x: Vector de dirección (Vector2D) o velocidad X
+            vel_y: Velocidad Y del proyectil (si direction_or_vel_x es float)
+            speed: Magnitud de la velocidad (si direction_or_vel_x es Vector2D)
             damage: Daño que causa el proyectil
             owner_type: Tipo de dueño ("player" o "enemy")
             color: Color del proyectil
         """
         projectile_color = color if color else COLORS['projectile']
         super().__init__(x, y, PROJECTILE_RADIUS, projectile_color)
-        self.vel_x = vel_x
-        self.vel_y = vel_y
-        self.damage = damage
+        if vel_y is not None:
+            # Forma antigua: vel_x, vel_y
+            self.vel_x = direction_or_vel_x
+            self.vel_y = vel_y
+        elif speed is not None and hasattr(direction_or_vel_x, 'x') and hasattr(direction_or_vel_x, 'y'):
+            # Forma nueva: dirección y velocidad
+            self.vel_x = direction_or_vel_x.x * speed
+            self.vel_y = direction_or_vel_x.y * speed
+        else:
+            raise ValueError("Proyectil requiere vel_x/vel_y o direction+speed")
+        self.damage = int(damage)
         self.owner_type = owner_type
         self.lifetime = 3.0  # segundos
         self.special_effect = None  # Para efectos especiales como láser, plasma, etc.

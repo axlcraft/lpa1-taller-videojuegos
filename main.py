@@ -11,7 +11,7 @@ Juego 2D tipo RPG de acción que implementa los principios de POO.
     Q - vender primer item del inventario (simula tienda)
     ESC - salir
 
-Proyecto refactorizado con arquitectura modular para facilitar mantenimiento y extensibilidad.
+Proyecto refactorizado con arquit./ejecutar_juego.shectura modular para facilitar mantenimiento y extensibilidad.
 """
 from core.game_manager import GameManager
 

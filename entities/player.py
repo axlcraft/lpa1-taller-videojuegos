@@ -167,11 +167,13 @@ class Jugador(Figura):
         modified_projectiles = []
         for projectile in projectiles:
             # Aplicar bonificación de daño
-            projectile.damage = int(projectile.damage * (self.attack / self.base_attack))
+            projectile.damage = int(float(projectile.damage) * (self.attack / self.base_attack))
             
             # Aplicar efectos de multi-shot
             if "multi_shot" in self.active_effects:
                 multi_projectiles = self._create_multi_shot(projectile, direction)
+                for mp in multi_projectiles:
+                    mp.damage = int(float(mp.damage))
                 modified_projectiles.extend(multi_projectiles)
             else:
                 modified_projectiles.append(projectile)
@@ -200,8 +202,9 @@ class Jugador(Figura):
                 base_projectile.pos.x, base_projectile.pos.y,
                 new_direction.x * (base_projectile.vel_x**2 + base_projectile.vel_y**2)**0.5,
                 new_direction.y * (base_projectile.vel_x**2 + base_projectile.vel_y**2)**0.5,
-                int(base_projectile.damage * 0.8), base_projectile.owner_type,
-                base_projectile.color
+                damage=int(float(base_projectile.damage) * 0.8), 
+                owner_type=base_projectile.owner_type,
+                color=base_projectile.color
             )
             projectiles.append(extra_projectile)
             
@@ -241,7 +244,7 @@ class Jugador(Figura):
             )
             
             # Crear proyectil más poderoso
-            proj = Proyectil(self.pos.x, self.pos.y, new_dir, speed=600.0, damage=self.attack * 2)
+            proj = Proyectil(self.pos.x, self.pos.y, new_dir, speed=600.0, damage=int(self.attack * 2))
             projectiles.append(proj)
             
         # Consumir cargas y activar cooldown
