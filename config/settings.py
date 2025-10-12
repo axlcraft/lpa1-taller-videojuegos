@@ -20,13 +20,20 @@ XP_PER_KILL = 40
 XP_PER_TREASURE_VALUE = 0.1  # XP gain = value * this factor
 
 # Sistema de niveles
-MAX_LEVELS = 10
-ENEMIES_PER_LEVEL = [6, 8, 10, 12, 15, 18, 20, 22, 25, 30]  # Enemigos por nivel
-TREASURES_PER_LEVEL = [5, 6, 7, 8, 10, 12, 14, 16, 18, 20]  # Tesoros por nivel
-TRAPS_PER_LEVEL = [4, 5, 6, 7, 8, 10, 12, 14, 16, 18]       # Trampas por nivel
+MAX_LEVELS = 18  # Número máximo de niveles (extendido de 10 a 18)
 
-# Cuerpos estelares y temas por nivel
+# Victoria por puntaje
+VICTORY_SCORE_THRESHOLD = 5000  # Puntaje necesario para ganar
+ENEMIES_PER_LEVEL = [6, 8, 10, 12, 15, 18, 20, 22, 25, 30,   # Niveles 1-10 (originales)
+                    35, 40, 45, 50, 60, 70, 85, 100]         # Niveles 11-18 (nuevos)
+TREASURES_PER_LEVEL = [5, 6, 7, 8, 10, 12, 14, 16, 18, 20,   # Niveles 1-10 (originales) 
+                      22, 25, 28, 32, 36, 40, 45, 50]        # Niveles 11-18 (nuevos)
+TRAPS_PER_LEVEL = [4, 5, 6, 7, 8, 10, 12, 14, 16, 18,       # Niveles 1-10 (originales)
+                  22, 26, 30, 35, 40, 45, 50, 60]           # Niveles 11-18 (nuevos)
+
+# Cuerpos estelares y temas por nivel (extendido a 18 niveles)
 STELLAR_BODIES = [
+    # Niveles 1-10 (originales - Sistema Solar)
     {"name": "Mercurio", "theme": "hot", "bg_color": (160, 100, 60), "accent": (220, 140, 80)},
     {"name": "Venus", "theme": "hot", "bg_color": (180, 120, 40), "accent": (240, 180, 80)},
     {"name": "Marte", "theme": "desert", "bg_color": (160, 80, 40), "accent": (220, 120, 60)},
@@ -36,7 +43,17 @@ STELLAR_BODIES = [
     {"name": "Plutón", "theme": "cold", "bg_color": (80, 80, 120), "accent": (120, 120, 180)},
     {"name": "Betelgeuse", "theme": "stellar", "bg_color": (180, 60, 60), "accent": (240, 100, 100)},
     {"name": "Sirio", "theme": "stellar", "bg_color": (60, 100, 180), "accent": (100, 140, 240)},
-    {"name": "Vega", "theme": "stellar", "bg_color": (160, 160, 180), "accent": (220, 220, 240)}
+    {"name": "Vega", "theme": "stellar", "bg_color": (160, 160, 180), "accent": (220, 220, 240)},
+    
+    # Niveles 11-18 (nuevos - Sistemas estelares avanzados)
+    {"name": "Rigel", "theme": "supergiant", "bg_color": (100, 150, 255), "accent": (150, 200, 255)},
+    {"name": "Antares", "theme": "supergiant", "bg_color": (255, 80, 80), "accent": (255, 120, 120)},
+    {"name": "Aldebaran", "theme": "giant", "bg_color": (255, 140, 80), "accent": (255, 180, 120)},
+    {"name": "Polaris", "theme": "cepheid", "bg_color": (200, 200, 255), "accent": (230, 230, 255)},
+    {"name": "Capella", "theme": "multiple", "bg_color": (255, 255, 150), "accent": (255, 255, 200)},
+    {"name": "Agujero Negro X1", "theme": "blackhole", "bg_color": (10, 5, 20), "accent": (50, 20, 80)},
+    {"name": "Sagitario A*", "theme": "galactic_center", "bg_color": (80, 20, 100), "accent": (120, 60, 150)},
+    {"name": "Núcleo Galáctico", "theme": "final_boss", "bg_color": (5, 0, 10), "accent": (100, 50, 200)}
 ]
 
 # Colores RGB - Tema espacial

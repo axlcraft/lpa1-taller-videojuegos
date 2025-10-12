@@ -762,6 +762,47 @@ class SoundManager:
         # Envolvente con fade out gradual
         combined = self._apply_envelope(combined, 0.5, 1.0, 0.4, 3.0)
         return pygame.sndarray.make_sound((combined * 32767).astype(np.int16))
+    
+    def _generate_victory_music(self) -> pygame.mixer.Sound:
+        """Genera música épica de victoria total."""
+        duration = 6.0  # 6 segundos de fanfare triunfal
+        frames = int(duration * 22050)
+        combined = np.zeros((frames, 2))
+        
+        # Progresión triunfal ascendente - Do Mayor heroico
+        victory_notes = [262, 294, 330, 349, 392, 440, 494, 523, 587, 659]  # Do a Mi alto
+        
+        for i in range(frames):
+            t = i / 22050
+            phase = t / duration  # 0 a 1 durante la duración
+            
+            # Melodía principal que asciende heroicamente
+            note_index = min(len(victory_notes) - 1, int(phase * len(victory_notes)))
+            main_freq = victory_notes[note_index]
+            
+            # Melodía principal potente
+            main = 0.4 * math.sin(2 * math.pi * main_freq * t)
+            
+            # Armonía en octavas para magnificencia
+            harmony_high = 0.2 * math.sin(2 * math.pi * main_freq * 2 * t)
+            harmony_low = 0.15 * math.sin(2 * math.pi * main_freq * 0.5 * t)
+            
+            # Acordes triunfales (tercera y quinta)
+            chord_third = 0.1 * math.sin(2 * math.pi * main_freq * 1.25 * t)
+            chord_fifth = 0.1 * math.sin(2 * math.pi * main_freq * 1.5 * t)
+            
+            # Trompetas ceremoniales (ligera distorsión armónica)
+            trumpet = 0.08 * math.sin(2 * math.pi * main_freq * 3 * t) * math.sin(t * 0.5)
+            
+            # Crescendo épico
+            crescendo = min(1.0, t * 2.0)  # Aumenta volumen durante la primera mitad
+            
+            wave = (main + harmony_high + harmony_low + chord_third + chord_fifth + trumpet) * crescendo
+            combined[i] = [wave, wave]
+        
+        # Envolvente épica con ataque rápido y final brillante
+        combined = self._apply_envelope(combined, 0.1, 0.2, 0.6, 0.8)
+        return pygame.sndarray.make_sound((combined * 32767).astype(np.int16))
         
     def _generate_all_sounds(self) -> None:
         """Genera todos los efectos de sonido."""
@@ -790,6 +831,7 @@ class SoundManager:
         self.sounds['level_music'] = self._generate_level_music()
         self.sounds['leaderboard_music'] = self._generate_leaderboard_music()
         self.sounds['death_music'] = self._generate_death_music()
+        self.sounds['victory_music'] = self._generate_victory_music()
         
         print("Efectos de sonido y música generados correctamente.")
         
@@ -885,4 +927,15 @@ class SoundManager:
             music.set_volume(self.music_volume * self.master_volume)
             self.music_channel.play(music, loops=-1)
             self.ambient_playing = True
+    
+    def play_victory_music(self) -> None:
+        """Reproduce la música de victoria total (una sola vez)."""
+        if not self.music_enabled:
+            return
+            
+        if 'victory_music' in self.sounds:
+            self.stop_ambient_music()
+            music = self.sounds['victory_music']
+            music.set_volume(self.music_volume * self.master_volume)
+            self.music_channel.play(music, loops=0)  # Sin loop, una sola vez
             self.ambient_playing = True

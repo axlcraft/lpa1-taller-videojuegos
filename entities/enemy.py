@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class Enemigo(Figura):
     """Enemigo con IA básica que persigue al jugador."""
 
-    def __init__(self, x: float, y: float, tipo: str = "terrestre"):
+    def __init__(self, x: float, y: float, tipo: str = "terrestre", level: int = 1):
         """
         Inicializa un enemigo.
         
@@ -25,44 +25,86 @@ class Enemigo(Figura):
             x: Posición X inicial
             y: Posición Y inicial
             tipo: Tipo de enemigo ("terrestre", "volador", "artillero")
+            level: Nivel del juego para escalado de dificultad
         """
         super().__init__(x, y, ENEMY_RADIUS, COLORS['enemy'])
         self.tipo = tipo
+        self.level = level
         
-        # Configurar estadísticas según el tipo
+        # Configurar estadísticas base según el tipo
         if tipo == "terrestre":
-            self.hp = 60
-            self.attack = 15
-            self.defense = 3
+            base_hp = 60
+            base_attack = 15
+            base_defense = 3
             self.speed = 80.0
-            self.contact_damage = 20
+            base_contact_damage = 20
             self.can_shoot = False
         elif tipo == "volador":
-            self.hp = 45
-            self.attack = 12
-            self.defense = 1
+            base_hp = 45
+            base_attack = 12
+            base_defense = 1
             self.speed = 110.0
-            self.contact_damage = 15
+            base_contact_damage = 15
             self.can_shoot = True
             self.shoot_range = 200.0
             self.shoot_cooldown = 1.5
         elif tipo == "artillero":
-            self.hp = 80
-            self.attack = 20
-            self.defense = 5
+            base_hp = 80
+            base_attack = 20
+            base_defense = 5
             self.speed = 50.0
-            self.contact_damage = 25
+            base_contact_damage = 25
             self.can_shoot = True
             self.shoot_range = 300.0
             self.shoot_cooldown = 2.0
+        elif tipo == "elite":  # Nuevo tipo para niveles 11+
+            base_hp = 120
+            base_attack = 30
+            base_defense = 8
+            self.speed = 90.0
+            base_contact_damage = 35
+            self.can_shoot = True
+            self.shoot_range = 250.0
+            self.shoot_cooldown = 1.0
+        elif tipo == "berserker":  # Nuevo tipo para niveles 13+
+            base_hp = 100
+            base_attack = 40
+            base_defense = 4
+            self.speed = 140.0
+            base_contact_damage = 50
+            self.can_shoot = False
+        elif tipo == "guardian":  # Nuevo tipo para niveles 15+
+            base_hp = 180
+            base_attack = 25
+            base_defense = 15
+            self.speed = 60.0
+            base_contact_damage = 30
+            self.can_shoot = True
+            self.shoot_range = 400.0
+            self.shoot_cooldown = 2.5
         else:
             # Tipo por defecto
-            self.hp = 50
-            self.attack = 10
-            self.defense = 2
+            base_hp = 50
+            base_attack = 10
+            base_defense = 2
             self.speed = 70.0
-            self.contact_damage = 12
+            base_contact_damage = 12
             self.can_shoot = False
+            
+        # Aplicar escalado por nivel con dificultad progresiva más agresiva
+        if level <= 10:
+            # Escalado normal para niveles 1-10 (15% por nivel)
+            level_multiplier = 1.0 + (level - 1) * 0.15
+        else:
+            # Escalado más agresivo para niveles 11-18 (25% por nivel + bonus base)
+            base_multiplier = 1.0 + (10 - 1) * 0.15  # Multiplier at level 10
+            extra_levels = level - 10
+            level_multiplier = base_multiplier + (extra_levels * 0.25)
+        
+        self.hp = int(base_hp * level_multiplier)
+        self.attack = int(base_attack * level_multiplier)
+        self.defense = int(base_defense * level_multiplier)
+        self.contact_damage = int(base_contact_damage * level_multiplier)
             
         self._invulnerable_timer = 0.0
         self._shoot_timer = 0.0

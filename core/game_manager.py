@@ -12,7 +12,7 @@ from world.scene import Escenario
 from world.objects import TrampaExplosiva, Tesoro, ArmamentoDefensa, Meteorito
 from utils.math import Vector2D
 from core.game_states import GameState, Button, InputField, SpaceBackground
-from core.visual_effects import DamageEffect, Spaceship, Explosion, EngineTrail, get_stellar_name, draw_explosive_trap, draw_intergalactic_eye_boss, draw_meteorite, draw_power_up, draw_space_hazard
+from core.visual_effects import DamageEffect, Spaceship, Explosion, EngineTrail, get_stellar_name, draw_explosive_trap, draw_intergalactic_eye_boss, draw_meteorite, draw_power_up, draw_space_hazard, ExplosionManager
 from core.shop import Shop
 from core.sound_manager import SoundManager
 from core.character_system import CharacterManager, CharacterSelector
@@ -22,7 +22,7 @@ from config.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, PLAYER_RADIUS, ENEMY_RADIUS, 
     PROJECTILE_RADIUS, TRAP_RADIUS, TREASURE_RADIUS, XP_PER_KILL, 
     XP_PER_TREASURE_VALUE, COLORS, MAX_LEVELS, ENEMIES_PER_LEVEL,
-    TREASURES_PER_LEVEL, TRAPS_PER_LEVEL
+    TREASURES_PER_LEVEL, TRAPS_PER_LEVEL, VICTORY_SCORE_THRESHOLD
 )
 
 
@@ -118,6 +118,9 @@ class GameManager:
         # Sistema de power-ups mejorado
         from core.powerup_system import PowerUpManager
         self.powerup_manager = PowerUpManager()
+        
+        # Sistema de explosiones mejoradas
+        self.explosion_manager = ExplosionManager()
         
         # Iniciar música del menú
         self.sound_manager.play_menu_music()
@@ -353,9 +356,12 @@ class GameManager:
                     item_purchased, continue_pressed, selected_item = self.shop.handle_event(ev, self.player.gold)
                     
                     if item_purchased:
+                        current_price = item_purchased.get_current_price()
+                        # Restar el precio antes de la compra (ya que el precio cambió después)
+                        actual_cost = int(item_purchased.base_price * (1.5 ** (item_purchased.purchase_count - 1)))
                         self.apply_shop_item(item_purchased)
-                        self.player.gold -= item_purchased.price
-                        print(f"Comprado: {item_purchased.name}")
+                        self.player.gold -= actual_cost
+                        print(f"Comprado: {item_purchased.name} por {actual_cost} oro")
                     
                     if continue_pressed:
                         self.next_level()
@@ -463,7 +469,7 @@ class GameManager:
         """Carga el nivel actual."""
         if self.current_level <= MAX_LEVELS:
             difficulty = 1.0 + (self.current_level - 1) * 0.3
-            self.scene = Escenario(SCREEN_WIDTH, SCREEN_HEIGHT, difficulty)
+            self.scene = Escenario(SCREEN_WIDTH, SCREEN_HEIGHT, difficulty, self.current_level)
             
             # Aplicar tema estelar del nivel
             from core.visual_effects import get_stellar_background_color, get_stellar_accent_color, get_stellar_name
@@ -530,28 +536,44 @@ class GameManager:
             return
         
         if item.item_type == "health":
-            self.player.hp = min(self.player.hp + item.bonus_value, 200)  # Cap máximo
-            print(f"HP restaurado: +{item.bonus_value}")
+            # Reparación completa al máximo HP actual
+            old_hp = self.player.hp
+            self.player.hp = self.player.max_hp
+            restored = self.player.hp - old_hp
+            print(f"¡REPARACIÓN COMPLETA! HP restaurado: +{restored}")
         
         elif item.item_type == "max_health":
             self.player.hp += item.bonus_value
-            print(f"HP máximo aumentado: +{item.bonus_value}")
+            self.player.max_hp += item.bonus_value
+            # También actualizar stats base para cálculos
+            self.player.base_attack = self.player.attack
+            print(f"¡REACTOR CUÁNTICO INSTALADO! HP máximo aumentado: +{item.bonus_value}")
         
         elif item.item_type == "attack":
             self.player.attack += item.bonus_value
-            print(f"Ataque aumentado: +{item.bonus_value}")
+            self.player.base_attack = self.player.attack
+            print(f"¡CAÑONES DE PLASMA INSTALADOS! Ataque aumentado: +{item.bonus_value}")
         
         elif item.item_type == "defense":
             self.player.defense += item.bonus_value
-            print(f"Defensa aumentada: +{item.bonus_value}")
+            print(f"¡BLINDAJE DE TITANIO INSTALADO! Defensa aumentada: +{item.bonus_value}")
         
         elif item.item_type == "speed":
-            self.player.move_speed += item.bonus_value
-            print(f"Velocidad aumentada: +{item.bonus_value}")
+            # Mejora porcentual de velocidad
+            speed_increase = self.player.base_move_speed * (item.bonus_value / 100)
+            self.player.move_speed += speed_increase
+            self.player.base_move_speed = self.player.move_speed
+            print(f"¡MOTORES WARP ACTIVADOS! Velocidad aumentada: +{item.bonus_value}%")
         
         elif item.item_type == "invulnerability":
             self.player.invulnerable_time += item.bonus_value / 10  # Convertir a segundos
-            print(f"Invulnerabilidad aumentada: +{item.bonus_value/10}s")
+            print(f"¡ESCUDO DEFLECTOR ACTIVADO! Invulnerabilidad aumentada: +{item.bonus_value/10}s")
+            
+        # Agregar efectos visuales permanentes según las compras
+        if not hasattr(self.player, 'visual_upgrades'):
+            self.player.visual_upgrades = set()
+            
+        self.player.visual_upgrades.add(item.item_type)
 
     def update(self, dt: float) -> None:
         """
@@ -567,7 +589,10 @@ class GameManager:
         self.damage_effect.update(dt)
         self.floating_text.update(dt)
         
-        # Actualizar explosiones
+        # Actualizar explosiones mejoradas
+        self.explosion_manager.update(dt)
+        
+        # Actualizar explosiones legacy
         for explosion in self.explosions[:]:
             if not explosion.update(dt):
                 self.explosions.remove(explosion)
@@ -744,6 +769,10 @@ class GameManager:
         for tr in list(self.scene.traps):
             dist = (Vector2D(tr.pos.x, tr.pos.y) - self.player.pos).magnitude()
             if dist <= (tr.radius + self.player.radio):
+                # Crear efecto visual de explosión mejorado
+                explosion_radius = tr.alcance * 1.5  # Efecto visual más grande que el daño real
+                self.explosion_manager.add_explosion(tr.pos.x, tr.pos.y, explosion_radius, 1.2)
+                
                 # Detonar trampa inmediatamente
                 affected = tr.detonar(self.scene.enemies + [self.player])
                 for ent, dmg in affected:
@@ -968,6 +997,12 @@ class GameManager:
             self.state = GameState.GAME_OVER
             # Reproducir música de muerte
             self.sound_manager.play_death_music()
+        elif self.score >= VICTORY_SCORE_THRESHOLD:
+            print(f"¡VICTORIA POR PUNTAJE! Has alcanzado {self.score} puntos (objetivo: {VICTORY_SCORE_THRESHOLD})")
+            self.save_final_score()
+            self.state = GameState.VICTORY
+            # Reproducir música de victoria
+            self.sound_manager.play_victory_music()
         elif not self.scene.enemies:
             print(f"¡Nivel {self.current_level} completado! Todos los enemigos eliminados.")
             self.state = GameState.LEVEL_COMPLETE
@@ -1023,7 +1058,9 @@ class GameManager:
         player_lvl_text = self.font.render(f"LVL: {self.player.level}", True, COLORS['white'])
         xp_text = self.font.render(f"XP: {self.player.xp}/{self.player.xp_to_next}", True, COLORS['white'])
         gold_text = self.font.render(f"Oro: {self.player.gold}", True, COLORS['yellow'])
-        score_text = self.font.render(f"Puntos: {self.score}", True, COLORS['gray'])
+        # Score con indicador de progreso hacia victoria
+        score_color = COLORS['green'] if self.score >= VICTORY_SCORE_THRESHOLD else COLORS['gray']
+        score_text = self.font.render(f"Puntos: {self.score}/{VICTORY_SCORE_THRESHOLD}", True, score_color)
         
         # Información de enemigos restantes
         enemies_left = len(self.scene.enemies) if self.scene else 0
@@ -1062,7 +1099,9 @@ class GameManager:
         player_lvl_text = self.font.render(f"LVL: {self.player.level}", True, COLORS['white'])
         xp_text = self.font.render(f"XP: {self.player.xp}/{self.player.xp_to_next}", True, COLORS['white'])
         gold_text = self.font.render(f"Oro: {self.player.gold}", True, COLORS['yellow'])
-        score_text = self.font.render(f"Puntos: {self.score}", True, COLORS['gray'])
+        # Score con indicador de progreso hacia victoria
+        score_color = COLORS['green'] if self.score >= VICTORY_SCORE_THRESHOLD else COLORS['gray']
+        score_text = self.font.render(f"Puntos: {self.score}/{VICTORY_SCORE_THRESHOLD}", True, score_color)
         
         # Información de enemigos restantes
         enemies_left = len(self.scene.enemies) if self.scene else 0
@@ -1363,34 +1402,43 @@ class GameManager:
         if self.player_engine_trail:
             self.player_engine_trail.draw(game_surface)
         
-        # Dibujar proyectiles del jugador
+        # Dibujar proyectiles del jugador con efectos mejorados
         for p in self.projectiles:
-            if hasattr(p, 'special_effect') and p.special_effect:
-                # Proyectiles con efectos especiales
-                if p.special_effect == "laser":
-                    # Láser del jugador - línea brillante
-                    pygame.draw.circle(game_surface, (0, 255, 255), p.pos.to_int_tuple(), p.radio + 2)
-                    pygame.draw.circle(game_surface, (255, 255, 255), p.pos.to_int_tuple(), p.radio)
-                elif p.special_effect == "plasma":
-                    # Plasma - círculo con energía
-                    pygame.draw.circle(game_surface, (255, 0, 255), p.pos.to_int_tuple(), p.radio + 1)
-                    pygame.draw.circle(game_surface, (255, 100, 255), p.pos.to_int_tuple(), p.radio)
-                elif p.special_effect == "explosive":
-                    # Misil - forma especial
-                    pygame.draw.circle(game_surface, (255, 100, 0), p.pos.to_int_tuple(), p.radio + 1)
-                    pygame.draw.circle(game_surface, (255, 200, 0), p.pos.to_int_tuple(), p.radio)
-                else:
-                    # Proyectil normal con color personalizado
-                    pygame.draw.circle(game_surface, p.color, p.pos.to_int_tuple(), p.radio)
+            if hasattr(p, 'draw') and callable(p.draw):
+                # Usar el nuevo sistema de efectos visuales
+                p.draw(game_surface)
             else:
-                # Proyectil normal
-                pygame.draw.circle(game_surface, p.color, p.pos.to_int_tuple(), p.radio)
+                # Fallback al sistema anterior
+                if hasattr(p, 'special_effect') and p.special_effect:
+                    # Proyectiles con efectos especiales
+                    if p.special_effect == "laser":
+                        # Láser del jugador - línea brillante
+                        pygame.draw.circle(game_surface, (0, 255, 255), p.pos.to_int_tuple(), p.radio + 2)
+                        pygame.draw.circle(game_surface, (255, 255, 255), p.pos.to_int_tuple(), p.radio)
+                    elif p.special_effect == "plasma":
+                        # Plasma - círculo con energía
+                        pygame.draw.circle(game_surface, (255, 0, 255), p.pos.to_int_tuple(), p.radio + 1)
+                        pygame.draw.circle(game_surface, (255, 100, 255), p.pos.to_int_tuple(), p.radio)
+                    elif p.special_effect == "explosive":
+                        # Misil - forma especial
+                        pygame.draw.circle(game_surface, (255, 100, 0), p.pos.to_int_tuple(), p.radio + 1)
+                        pygame.draw.circle(game_surface, (255, 200, 0), p.pos.to_int_tuple(), p.radio)
+                    else:
+                        # Proyectil normal con color personalizado
+                        pygame.draw.circle(game_surface, p.color, p.pos.to_int_tuple(), p.radio)
+                else:
+                    # Proyectil normal
+                    pygame.draw.circle(game_surface, p.color, p.pos.to_int_tuple(), p.radio)
             
-        # Dibujar proyectiles enemigos
+        # Dibujar proyectiles enemigos con efectos mejorados
         for ep in self.enemy_projectiles:
-            # Proyectiles enemigos con efecto especial
-            pygame.draw.circle(game_surface, (255, 50, 50), ep.pos.to_int_tuple(), ep.radio + 1)
-            pygame.draw.circle(game_surface, (255, 100, 100), ep.pos.to_int_tuple(), ep.radio)
+            if hasattr(ep, 'draw') and callable(ep.draw):
+                # Usar el nuevo sistema de efectos visuales
+                ep.draw(game_surface)
+            else:
+                # Fallback al sistema anterior
+                pygame.draw.circle(game_surface, (255, 50, 50), ep.pos.to_int_tuple(), ep.radio + 1)
+                pygame.draw.circle(game_surface, (255, 100, 100), ep.pos.to_int_tuple(), ep.radio)
 
         # Dibujar enemigos como naves espaciales
         for e in self.scene.enemies:
@@ -1411,7 +1459,10 @@ class GameManager:
         # Dibujar efectos visuales de mejoras de la tienda
         Spaceship.draw_ship_upgrades(game_surface, self.player.pos, self.player.radio, self.player)
         
-        # Dibujar explosiones
+        # Dibujar explosiones mejoradas
+        self.explosion_manager.draw(game_surface)
+        
+        # Dibujar explosiones legacy
         for explosion in self.explosions:
             explosion.draw(game_surface)
         
@@ -1522,12 +1573,20 @@ class GameManager:
         pilot_rect = pilot_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 - 50))
         self.screen.blit(pilot_text, pilot_rect)
         
+        # Mostrar tipo de victoria
+        if self.score >= VICTORY_SCORE_THRESHOLD and self.current_level < MAX_LEVELS:
+            victory_type = self.font.render("¡VICTORIA POR PUNTAJE MÁXIMO!", True, COLORS['yellow'])
+        else:
+            victory_type = self.font.render("¡VICTORIA POR EXPLORACIÓN COMPLETA!", True, COLORS['yellow'])
+        victory_type_rect = victory_type.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 - 10))
+        self.screen.blit(victory_type, victory_type_rect)
+        
         score_text = self.font.render(f"Puntuación Final: {self.score}", True, COLORS['white'])
-        score_rect = score_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2))
+        score_rect = score_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 20))
         self.screen.blit(score_text, score_rect)
         
-        levels_text = self.font.render(f"Niveles Completados: {MAX_LEVELS}/{MAX_LEVELS}", True, COLORS['green'])
-        levels_rect = levels_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 30))
+        levels_text = self.font.render(f"Niveles Completados: {self.current_level}/{MAX_LEVELS}", True, COLORS['green'])
+        levels_rect = levels_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 50))
         self.screen.blit(levels_text, levels_rect)
         
         restart_text = self.font.render("Presiona R para jugar de nuevo o ESC para volver al menú", True, COLORS['gray'])

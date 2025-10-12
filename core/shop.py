@@ -12,13 +12,34 @@ from config.settings import SCREEN_WIDTH, SCREEN_HEIGHT, COLORS
 class ShopItem:
     """Artículo de la tienda."""
     
-    def __init__(self, name: str, description: str, price: int, item_type: str, bonus_value: int):
+    def __init__(self, name: str, description: str, price: int, item_type: str, bonus_value: int, max_purchases: int = 5):
         self.name = name
         self.description = description
-        self.price = price
+        self.base_price = price
+        self.price = price  # Precio actual (aumenta con compras)
         self.item_type = item_type  # 'health', 'attack', 'defense', 'speed'
         self.bonus_value = bonus_value
-        self.purchased = False
+        self.purchased = False  # Mantengo por compatibilidad
+        self.purchase_count = 0  # Número de veces comprado
+        self.max_purchases = max_purchases  # Máximo número de compras
+        
+    def can_purchase(self) -> bool:
+        """Verifica si se puede comprar este item."""
+        return self.purchase_count < self.max_purchases
+        
+    def get_current_price(self) -> int:
+        """Obtiene el precio actual (aumenta 50% por compra)."""
+        return int(self.base_price * (1.5 ** self.purchase_count))
+        
+    def purchase_item(self) -> bool:
+        """Compra el item si es posible."""
+        if self.can_purchase():
+            self.purchase_count += 1
+            self.price = self.get_current_price()
+            if self.purchase_count >= self.max_purchases:
+                self.purchased = True  # Marca como agotado
+            return True
+        return False
 
 
 class Shop:
@@ -38,12 +59,12 @@ class Shop:
     def _create_shop_items(self):
         """Crea los artículos disponibles en la tienda."""
         self.items = [
-            ShopItem("Reparación de Casco", "Restaura 50 HP", 100, "health", 50),
-            ShopItem("Mejora de Casco", "HP máximo +30", 150, "max_health", 30),
-            ShopItem("Cañones Mejorados", "Ataque +5", 120, "attack", 5),
-            ShopItem("Blindaje Reforzado", "Defensa +3", 100, "defense", 3),
-            ShopItem("Motores Mejorados", "Velocidad +20%", 80, "speed", 20),
-            ShopItem("Escudos de Energía", "Invulnerabilidad +0.2s", 200, "invulnerability", 2),
+            ShopItem("Reparación Completa", "Restaura 100% HP", 120, "health", 999, 99),  # Siempre disponible
+            ShopItem("Reactor Cuántico", "HP máximo +80", 200, "max_health", 80, 5),
+            ShopItem("Cañones de Plasma", "Ataque +15", 180, "attack", 15, 5),
+            ShopItem("Blindaje Titanio", "Defensa +10", 150, "defense", 10, 5),
+            ShopItem("Motores Warp", "Velocidad +50%", 160, "speed", 50, 3),
+            ShopItem("Escudo Deflector", "Invulnerabilidad +0.5s", 300, "invulnerability", 5, 3),
         ]
     
     def _create_buttons(self):
@@ -56,9 +77,13 @@ class Shop:
             self.buttons.append(button)
     
     def reset_purchases(self):
-        """Reinicia las compras para un nuevo nivel."""
+        """Reinicia las compras para un nuevo nivel (solo reparación)."""
         for item in self.items:
-            item.purchased = False
+            # Solo resetear reparación de salud, las mejoras permanecen
+            if item.item_type == "health":
+                item.purchase_count = 0
+                item.purchased = False
+                item.price = item.base_price
     
     def handle_event(self, event: pygame.event.Event, player_gold: int) -> tuple:
         """
@@ -73,8 +98,9 @@ class Shop:
         for i, button in enumerate(self.buttons):
             if button.handle_event(event):
                 item = self.items[i]
-                if not item.purchased and player_gold >= item.price:
-                    item.purchased = True
+                current_price = item.get_current_price()
+                if item.can_purchase() and player_gold >= current_price:
+                    item.purchase_item()
                     return (item, False, item)
                 else:
                     self.selected_item = item
@@ -103,30 +129,37 @@ class Shop:
             
             # Fondo del artículo
             item_rect = pygame.Rect(x - 10, y - 10, 270, 120)
-            color = COLORS['menu_bg'] if not item.purchased else COLORS['green']
-            if player_gold < item.price and not item.purchased:
-                color = COLORS['trap']
+            current_price = item.get_current_price()
+            
+            # Color según disponibilidad
+            if not item.can_purchase():
+                color = COLORS['green']  # Agotado
+            elif player_gold < current_price:
+                color = COLORS['trap']   # Sin fondos
+            else:
+                color = COLORS['menu_bg']  # Disponible
             
             pygame.draw.rect(screen, color, item_rect)
             pygame.draw.rect(screen, COLORS['white'], item_rect, 2)
             
             # Nombre del artículo (como botón)
             button_color = COLORS['button_hover'] if button.is_hovered else COLORS['button']
-            if item.purchased:
+            if not item.can_purchase():
                 button_color = COLORS['green']
-            elif player_gold < item.price:
+            elif player_gold < current_price:
                 button_color = COLORS['trap']
             
             button.rect.topleft = (x, y)
             pygame.draw.rect(screen, button_color, button.rect)
             pygame.draw.rect(screen, COLORS['white'], button.rect, 2)
             
-            # Texto del botón
-            button_text = f"{item.name} - {item.price}g"
-            if item.purchased:
-                button_text = "COMPRADO"
-            elif player_gold < item.price:
+            # Texto del botón con contadores
+            if not item.can_purchase():
+                button_text = "AGOTADO"
+            elif player_gold < current_price:
                 button_text = "SIN FONDOS"
+            else:
+                button_text = f"{item.name} - {current_price}g"
             
             text_color = COLORS['white']
             if player_gold < item.price and not item.purchased:
@@ -136,9 +169,15 @@ class Shop:
             text_rect = text_surface.get_rect(center=button.rect.center)
             screen.blit(text_surface, text_rect)
             
-            # Descripción del artículo
+            # Descripción del artículo  
             desc_text = self.font.render(item.description, True, COLORS['light_gray'])
             screen.blit(desc_text, (x, y + 50))
+            
+            # Contador de compras
+            count_text = f"Comprado: {item.purchase_count}/{item.max_purchases}"
+            count_color = COLORS['yellow'] if item.purchase_count > 0 else COLORS['light_gray']
+            count_surface = self.font.render(count_text, True, count_color)
+            screen.blit(count_surface, (x, y + 70))
             
             # Efecto visual del artículo (solo si no está comprado)
             if not item.purchased:

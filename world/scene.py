@@ -13,7 +13,7 @@ from world.objects import (TrampaExplosiva, Tesoro, ArmamentoDefensa, Meteorito,
 class Escenario:
     """Generador y gestor del escenario del juego."""
 
-    def __init__(self, width: int, height: int, difficulty: float = 1.0):
+    def __init__(self, width: int, height: int, difficulty: float = 1.0, current_level: int = 1):
         """
         Inicializa el escenario.
         
@@ -21,10 +21,12 @@ class Escenario:
             width: Ancho del escenario
             height: Alto del escenario
             difficulty: Nivel de dificultad (afecta generación)
+            current_level: Nivel actual del juego para escalado
         """
         self.width = width
         self.height = height
         self.difficulty = difficulty
+        self.current_level = current_level
         self.enemies: List[Enemigo] = []
         self.traps: List[TrampaExplosiva] = []
         self.treasures: List[Tesoro] = []
@@ -47,20 +49,62 @@ class Escenario:
             n_power_ups: Número de power-ups (ventajas) a generar
             n_hazards: Número de peligros (desventajas) a generar
         """
-        # Generar enemigos con mayor variedad
+        # Generar enemigos con mayor variedad según el nivel
         self.enemies = []
         for _ in range(n_enemies):
             x = random.uniform(50, self.width - 50)
             y = random.uniform(50, self.height - 50)
-            # Más tipos de enemigos con diferentes probabilidades
+            
+            # Diferentes distribuciones de tipos según el nivel
             rand_val = random.random()
-            if rand_val < 0.5:
-                tipo = "terrestre"  # 50% - Enemigos tanque
-            elif rand_val < 0.8:
-                tipo = "volador"    # 30% - Enemigos rápidos que disparan
+            
+            if self.current_level <= 10:
+                # Niveles 1-10: Enemigos básicos
+                if rand_val < 0.5:
+                    tipo = "terrestre"  # 50%
+                elif rand_val < 0.8:
+                    tipo = "volador"    # 30%
+                else:
+                    tipo = "artillero"  # 20%
+            elif self.current_level <= 14:
+                # Niveles 11-14: Introducir enemigos elite
+                if rand_val < 0.3:
+                    tipo = "terrestre"  # 30%
+                elif rand_val < 0.5:
+                    tipo = "volador"    # 20%
+                elif rand_val < 0.7:
+                    tipo = "artillero"  # 20%
+                else:
+                    tipo = "elite"      # 30% - Nuevos enemigos elite
+            elif self.current_level <= 16:
+                # Niveles 15-16: Agregar berserkers
+                if rand_val < 0.2:
+                    tipo = "terrestre"  # 20%
+                elif rand_val < 0.35:
+                    tipo = "volador"    # 15%
+                elif rand_val < 0.5:
+                    tipo = "artillero"  # 15%
+                elif rand_val < 0.75:
+                    tipo = "elite"      # 25%
+                else:
+                    tipo = "berserker"  # 25% - Enemigos berserker rápidos
             else:
-                tipo = "artillero"  # 20% - Enemigos que se mantienen a distancia
-            self.enemies.append(Enemigo(x, y, tipo))
+                # Niveles 17-18: Máxima dificultad con guardians
+                if rand_val < 0.15:
+                    tipo = "terrestre"  # 15%
+                elif rand_val < 0.25:
+                    tipo = "volador"    # 10%
+                elif rand_val < 0.35:
+                    tipo = "artillero"  # 10%
+                elif rand_val < 0.55:
+                    tipo = "elite"      # 20%
+                elif rand_val < 0.75:
+                    tipo = "berserker"  # 20%
+                else:
+                    tipo = "guardian"   # 25% - Enemigos guardian ultra-defensivos
+            
+            # Crear enemigo con escalado por nivel
+            self.enemies.append(Enemigo(x, y, tipo, self.current_level))
         
         # Generar tesoros
         self.treasures = []

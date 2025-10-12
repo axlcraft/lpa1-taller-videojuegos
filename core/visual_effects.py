@@ -161,15 +161,25 @@ class Spaceship:
         x, y = int(pos.x), int(pos.y)
         time = pygame.time.get_ticks() * 0.001
         
-        # Escudo de energía (basado en defensa)
-        if hasattr(player, 'defense') and player.defense > 5:  # Defensa base es ~2-3
-            shield_intensity = min(1.0, (player.defense - 5) / 10.0)
-            shield_pulse = 0.3 + 0.4 * math.sin(time * 2) * shield_intensity
+        # Verificar si existen mejoras visuales
+        visual_upgrades = getattr(player, 'visual_upgrades', set())
+        
+        # Escudo de energía (mejorado con compras de defensa)
+        defense_upgrades = 'defense' in visual_upgrades
+        base_defense_check = hasattr(player, 'defense') and player.defense > 5
+        
+        if defense_upgrades or base_defense_check:
+            # Intensidad basada en defensa actual y mejoras
+            base_intensity = min(1.0, (player.defense - 5) / 10.0) if base_defense_check else 0.5
+            upgrade_bonus = 0.8 if defense_upgrades else 0  # Bonus por compra de Blindaje Titanio
+            shield_intensity = min(1.0, base_intensity + upgrade_bonus)
+            shield_pulse = 0.3 + 0.7 * math.sin(time * 2) * shield_intensity
             
-            # Anillos de escudo hexagonales
-            for ring in range(2):
-                shield_radius = radius + 8 + ring * 6 + int(shield_pulse * 4)
-                shield_alpha = int(80 * shield_pulse * (1 - ring * 0.3))
+            # Anillos de escudo hexagonales mejorados
+            num_rings = 3 if defense_upgrades else 2  # Más anillos con mejoras
+            for ring in range(num_rings):
+                shield_radius = radius + 10 + ring * 8 + int(shield_pulse * 6)
+                shield_alpha = int(120 * shield_pulse * (1 - ring * 0.2))
                 
                 if shield_alpha > 0:
                     # Hexágono del escudo
@@ -183,81 +193,182 @@ class Spaceship:
                     if len(shield_points) >= 3:
                         shield_surf = pygame.Surface((shield_radius * 2 + 20, shield_radius * 2 + 20), pygame.SRCALPHA)
                         adjusted_points = [(px - (x - shield_radius - 10), py - (y - shield_radius - 10)) for px, py in shield_points]
-                        pygame.draw.polygon(shield_surf, (0, 200, 255, shield_alpha), adjusted_points, 3)
+                        # Color mejorado para blindaje titanio
+                        shield_color = (0, 255, 200) if defense_upgrades else (0, 200, 255)
+                        line_width = 4 if defense_upgrades else 3
+                        pygame.draw.polygon(shield_surf, (*shield_color, shield_alpha), adjusted_points, line_width)
                         screen.blit(shield_surf, (x - shield_radius - 10, y - shield_radius - 10))
         
-        # Mejoras de armas (basado en ataque)
-        if hasattr(player, 'attack') and player.attack > 15:  # Ataque base es ~10
-            weapon_intensity = min(1.0, (player.attack - 15) / 20.0)
-            weapon_glow = 0.5 + 0.5 * math.sin(time * 4) * weapon_intensity
+        # Mejoras de armas (mejorado con compras de ataque)
+        attack_upgrades = 'attack' in visual_upgrades
+        base_attack_check = hasattr(player, 'attack') and player.attack > 15
+        
+        if attack_upgrades or base_attack_check:
+            # Intensidad basada en ataque actual y mejoras
+            base_intensity = min(1.0, (player.attack - 15) / 20.0) if base_attack_check else 0.5
+            upgrade_bonus = 1.0 if attack_upgrades else 0  # Bonus por Cañones de Plasma
+            weapon_intensity = min(1.0, base_intensity + upgrade_bonus)
+            weapon_glow = 0.5 + 0.5 * math.sin(time * 6) * weapon_intensity
             
-            # Cañones mejorados con energía
-            weapon_color = (255, int(150 * weapon_glow), 0)
+            # Cañones de plasma mejorados
+            if attack_upgrades:
+                weapon_color = (255, int(100 + 155 * weapon_glow), 255)  # Color plasma
+            else:
+                weapon_color = (255, int(150 * weapon_glow), 0)  # Color normal
             
-            # Puntos de armas en las alas
-            weapon_points = [
-                (x - radius * 0.8, y + radius * 0.2),  # Izquierda
-                (x + radius * 0.8, y + radius * 0.2),  # Derecha
-            ]
+            # Puntos de armas en las alas (más si hay mejoras)
+            if attack_upgrades:
+                weapon_points = [
+                    (x - radius * 0.9, y - radius * 0.1),  # Izquierda superior
+                    (x + radius * 0.9, y - radius * 0.1),  # Derecha superior
+                    (x - radius * 0.7, y + radius * 0.3),  # Izquierda inferior
+                    (x + radius * 0.7, y + radius * 0.3),  # Derecha inferior
+                ]
+            else:
+                weapon_points = [
+                    (x - radius * 0.8, y + radius * 0.2),  # Izquierda
+                    (x + radius * 0.8, y + radius * 0.2),  # Derecha
+                ]
             
             for wp_x, wp_y in weapon_points:
-                # Núcleo del arma
-                pygame.draw.circle(screen, weapon_color, (wp_x, wp_y), 4)
+                # Núcleo del arma mejorado
+                core_size = 6 if attack_upgrades else 4
+                pygame.draw.circle(screen, weapon_color, (int(wp_x), int(wp_y)), core_size)
                 
-                # Anillos de energía
-                for ring_radius in [6, 8, 10]:
-                    ring_alpha = int(100 * weapon_glow * (1 - (ring_radius - 6) / 8))
+                # Anillos de energía mejorados
+                max_rings = [8, 12, 16] if attack_upgrades else [6, 8, 10]
+                for ring_radius in max_rings:
+                    ring_alpha = int(150 * weapon_glow * (1 - (ring_radius - max_rings[0]) / (max_rings[-1] - max_rings[0])))
                     if ring_alpha > 0:
                         ring_surf = pygame.Surface((ring_radius * 2, ring_radius * 2), pygame.SRCALPHA)
-                        pygame.draw.circle(ring_surf, (*weapon_color, ring_alpha), (ring_radius, ring_radius), ring_radius, 2)
-                        screen.blit(ring_surf, (wp_x - ring_radius, wp_y - ring_radius))
+                        pygame.draw.circle(ring_surf, (*weapon_color, ring_alpha), (ring_radius, ring_radius), ring_radius, 3)
+                        screen.blit(ring_surf, (int(wp_x - ring_radius), int(wp_y - ring_radius)))
                 
-                # Chispas de energía
-                for i in range(4):
-                    spark_angle = time * 3 + i * math.pi / 2
-                    spark_dist = 12 + math.sin(time * 6) * 3
+                # Chispas de energía mejoradas
+                num_sparks = 8 if attack_upgrades else 4
+                for i in range(num_sparks):
+                    spark_angle = time * 4 + i * (2 * math.pi / num_sparks)
+                    spark_dist = 15 + math.sin(time * 8) * 4
                     sx = wp_x + math.cos(spark_angle) * spark_dist
                     sy = wp_y + math.sin(spark_angle) * spark_dist
-                    pygame.draw.circle(screen, (255, 255, 0), (int(sx), int(sy)), 1)
+                    spark_color = (255, 0, 255) if attack_upgrades else (255, 255, 0)
+                    pygame.draw.circle(screen, spark_color, (int(sx), int(sy)), 2)
         
-        # Motor mejorado (basado en velocidad)
-        if hasattr(player, 'speed') and player.speed > 4.0:  # Velocidad base es ~3.0
-            speed_intensity = min(1.0, (player.speed - 4.0) / 3.0)
-            engine_pulse = 0.6 + 0.4 * math.sin(time * 8) * speed_intensity
+        # Motor mejorado (con Motores Warp)
+        speed_upgrades = 'speed' in visual_upgrades
+        base_speed_check = hasattr(player, 'move_speed') and player.move_speed > 200.0
+        
+        if speed_upgrades or base_speed_check:
+            # Intensidad basada en velocidad actual y mejoras
+            base_intensity = min(1.0, (player.move_speed - 200.0) / 100.0) if base_speed_check else 0.5
+            upgrade_bonus = 1.0 if speed_upgrades else 0  # Bonus por Motores Warp
+            speed_intensity = min(1.0, base_intensity + upgrade_bonus)
+            engine_pulse = 0.6 + 0.4 * math.sin(time * 10) * speed_intensity
             
-            # Motores traseros mejorados
-            engine_points = [
-                (x - radius * 0.4, y + radius * 0.6),  # Motor izquierdo
-                (x + radius * 0.4, y + radius * 0.6),  # Motor derecho
-            ]
+            # Motores traseros warp
+            if speed_upgrades:
+                engine_points = [
+                    (x - radius * 0.5, y + radius * 0.7),  # Motor izquierdo principal
+                    (x + radius * 0.5, y + radius * 0.7),  # Motor derecho principal
+                    (x - radius * 0.2, y + radius * 0.8),  # Motor central izquierdo
+                    (x + radius * 0.2, y + radius * 0.8),  # Motor central derecho
+                    (x, y + radius * 0.9),                 # Motor central
+                ]
+            else:
+                engine_points = [
+                    (x - radius * 0.4, y + radius * 0.6),  # Motor izquierdo
+                    (x + radius * 0.4, y + radius * 0.6),  # Motor derecho
+                ]
             
             for ex, ey in engine_points:
-                # Llama del motor mejorada
-                flame_color = (255, int(100 + 155 * engine_pulse), 0)
+                # Llama del motor warp
+                if speed_upgrades:
+                    flame_color = (0, 200, 255)  # Color azul warp
+                    warp_glow = (255, 255, 255)  # Brillo blanco warp
+                else:
+                    flame_color = (255, int(100 + 155 * engine_pulse), 0)  # Color normal
                 
-                # Núcleo de la llama
-                flame_size = int(6 + engine_pulse * 4)
-                pygame.draw.circle(screen, flame_color, (ex, ey), flame_size)
+                # Núcleo de la llama mejorado
+                flame_size = int(8 + engine_pulse * 6) if speed_upgrades else int(6 + engine_pulse * 4)
+                pygame.draw.circle(screen, flame_color, (int(ex), int(ey)), flame_size)
                 
-                # Estela de plasma
-                for i in range(5):
-                    trail_y = ey + radius * 0.3 + i * 8
-                    trail_alpha = int(255 * engine_pulse * (1 - i * 0.15))
+                if speed_upgrades:
+                    # Núcleo brillante warp
+                    pygame.draw.circle(screen, warp_glow, (int(ex), int(ey)), flame_size // 2)
+                
+                # Estela de plasma mejorada
+                num_trails = 8 if speed_upgrades else 5
+                for i in range(num_trails):
+                    trail_y = ey + radius * 0.3 + i * 10
+                    trail_alpha = int(255 * engine_pulse * (1 - i * 0.1))
                     trail_width = flame_size - i
                     
                     if trail_alpha > 0 and trail_width > 0:
-                        trail_surf = pygame.Surface((trail_width * 2, 4), pygame.SRCALPHA)
+                        trail_surf = pygame.Surface((trail_width * 2, 6), pygame.SRCALPHA)
                         trail_surf.fill((*flame_color, trail_alpha))
-                        screen.blit(trail_surf, (ex - trail_width, trail_y))
+                        screen.blit(trail_surf, (int(ex - trail_width), int(trail_y)))
         
-        # Aura de salud (basado en HP máximo)
-        if hasattr(player, 'max_hp') and player.max_hp > 80:  # HP base es ~50-60
-            health_intensity = min(1.0, (player.max_hp - 80) / 50.0)
-            health_pulse = 0.2 + 0.3 * math.sin(time * 1.5) * health_intensity
+        # Reactor Cuántico (mejoras de HP)
+        max_health_upgrades = 'max_health' in visual_upgrades
+        if max_health_upgrades or (hasattr(player, 'max_hp') and player.max_hp > 120):
+            health_intensity = min(1.0, (player.max_hp - 120) / 160.0) if hasattr(player, 'max_hp') else 0.5
+            upgrade_bonus = 1.0 if max_health_upgrades else 0
+            final_intensity = min(1.0, health_intensity + upgrade_bonus * 0.8)
+            health_pulse = 0.4 + 0.6 * math.sin(time * 2) * final_intensity
             
-            # Aura verde de vitalidad
-            aura_radius = radius + 15 + int(health_pulse * 8) 
-            aura_alpha = int(60 * health_pulse)
+            # Aura cuántica del reactor
+            aura_radius = radius + 20 + int(health_pulse * 10)
+            aura_alpha = int(80 * health_pulse)
+            
+            if aura_alpha > 0:
+                # Ondas cuánticas concéntricas
+                for wave in range(3):
+                    wave_radius = aura_radius - wave * 8
+                    wave_alpha = aura_alpha * (1 - wave * 0.3)
+                    if wave_alpha > 0:
+                        aura_surf = pygame.Surface((wave_radius * 2, wave_radius * 2), pygame.SRCALPHA)
+                        if max_health_upgrades:
+                            # Color cuántico azul-blanco
+                            pygame.draw.circle(aura_surf, (100, 200, 255, int(wave_alpha)), 
+                                             (wave_radius, wave_radius), wave_radius, 3)
+                        else:
+                            # Color verde salud
+                            pygame.draw.circle(aura_surf, (0, 255, 100, int(wave_alpha)), 
+                                             (wave_radius, wave_radius), wave_radius, 2)
+                        screen.blit(aura_surf, (x - wave_radius, y - wave_radius))
+        
+        # Escudo Deflector (mejoras de invulnerabilidad)
+        invulnerability_upgrades = 'invulnerability' in visual_upgrades
+        if invulnerability_upgrades:
+            deflector_pulse = 0.7 + 0.3 * math.sin(time * 4)
+            
+            # Campo deflector octogonal
+            deflector_radius = radius + 25 + int(deflector_pulse * 8)
+            deflector_alpha = int(100 * deflector_pulse)
+            
+            if deflector_alpha > 0:
+                # Puntos del octógono
+                deflector_points = []
+                for i in range(8):
+                    angle = i * math.pi / 4 + time * 0.3
+                    px = x + math.cos(angle) * deflector_radius
+                    py = y + math.sin(angle) * deflector_radius
+                    deflector_points.append((px, py))
+                
+                # Dibujar campo deflector
+                deflector_surf = pygame.Surface((deflector_radius * 2 + 20, deflector_radius * 2 + 20), pygame.SRCALPHA)
+                adjusted_points = [(px - (x - deflector_radius - 10), py - (y - deflector_radius - 10)) 
+                                 for px, py in deflector_points]
+                
+                # Líneas de energía doradas
+                pygame.draw.polygon(deflector_surf, (255, 215, 0, deflector_alpha), adjusted_points, 4)
+                screen.blit(deflector_surf, (x - deflector_radius - 10, y - deflector_radius - 10))
+                
+                # Partículas de energía en los vértices
+                for px, py in deflector_points[::2]:  # Solo cada segundo vértice
+                    particle_glow = 0.5 + 0.5 * math.sin(time * 6)
+                    pygame.draw.circle(screen, (255, 255, 0), (int(px), int(py)), 
+                                     int(3 + particle_glow * 2))
             
             if aura_alpha > 0:
                 aura_surf = pygame.Surface((aura_radius * 2, aura_radius * 2), pygame.SRCALPHA)
@@ -281,6 +392,7 @@ class Spaceship:
         alien_accent = (180, 100, 200)   # Rosa alienígena
         hostile_energy = (255, 50, 50)   # Rojo hostil
         
+        # Definir tipos y sus efectos visuales
         if ship_type == "volador":
             # Nave enemiga voladora - Diseño orgánico alienígena
             
@@ -321,8 +433,136 @@ class Spaceship:
             pygame.draw.circle(screen, (255, 255, 0), (x - radius//4, y - radius//3), radius//8)
             pygame.draw.circle(screen, (255, 255, 0), (x + radius//4, y - radius//3), radius//8)
             
-        else:  # terrestre
-            # Nave enemiga terrestre - Diseño de guerra angular
+            pygame.draw.polygon(screen, hostile_energy, core_points, 2)
+            
+        elif ship_type == "elite":
+            # Nave enemiga ELITE - Diseño avanzado con cristales
+            elite_crystal = (100, 255, 200)    # Cyan cristalino
+            elite_energy = (255, 100, 255)     # Magenta energético
+            
+            # Cuerpo principal cristalino
+            body_points = [
+                (x, y - radius * 1.2),        # Punta afilada
+                (x - radius * 0.5, y - radius * 0.8),
+                (x - radius * 0.9, y - radius * 0.2),
+                (x - radius * 0.7, y + radius * 0.4),
+                (x - radius * 0.3, y + radius * 0.9),
+                (x, y + radius * 0.7),
+                (x + radius * 0.3, y + radius * 0.9),
+                (x + radius * 0.7, y + radius * 0.4),
+                (x + radius * 0.9, y - radius * 0.2),
+                (x + radius * 0.5, y - radius * 0.8),
+            ]
+            pygame.draw.polygon(screen, elite_crystal, body_points)
+            
+            # Cristales de energía laterales
+            for side in [-1, 1]:
+                crystal_points = [
+                    (x + side * radius * 0.8, y - radius * 0.3),
+                    (x + side * radius * 1.3, y - radius * 0.1),
+                    (x + side * radius * 1.2, y + radius * 0.3),
+                    (x + side * radius * 0.7, y + radius * 0.1)
+                ]
+                pygame.draw.polygon(screen, elite_energy, crystal_points)
+            
+            # Núcleo de energía triple
+            time_offset = pygame.time.get_ticks() * 0.008
+            for i in range(3):
+                pulse_size = radius // 4 + int(2 * math.sin(time_offset + i * math.pi / 3))
+                color_intensity = 150 + int(105 * abs(math.sin(time_offset + i * math.pi / 3)))
+                core_color = (color_intensity, 100, 255)
+                pygame.draw.circle(screen, core_color, (x + (i-1) * radius//4, y), pulse_size)
+            
+            pygame.draw.polygon(screen, elite_energy, body_points, 3)
+            
+        elif ship_type == "berserker":
+            # Nave enemiga BERSERKER - Diseño agresivo con llamas
+            berserker_flame = (255, 80, 0)     # Naranja llameante
+            berserker_core = (255, 200, 0)     # Amarillo ardiente
+            
+            # Cuerpo afilado y agresivo
+            body_points = [
+                (x, y - radius * 1.3),        # Punta ultra-afilada
+                (x - radius * 0.3, y - radius * 0.9),
+                (x - radius * 0.6, y - radius * 0.4),
+                (x - radius * 1.0, y + radius * 0.1),
+                (x - radius * 0.4, y + radius * 0.8),
+                (x, y + radius * 0.5),
+                (x + radius * 0.4, y + radius * 0.8),
+                (x + radius * 1.0, y + radius * 0.1),
+                (x + radius * 0.6, y - radius * 0.4),
+                (x + radius * 0.3, y - radius * 0.9),
+            ]
+            pygame.draw.polygon(screen, berserker_flame, body_points)
+            
+            # Alas de fuego
+            for side in [-1, 1]:
+                flame_points = [
+                    (x + side * radius * 0.5, y - radius * 0.2),
+                    (x + side * radius * 1.4, y),
+                    (x + side * radius * 1.1, y + radius * 0.5),
+                    (x + side * radius * 0.7, y + radius * 0.2)
+                ]
+                pygame.draw.polygon(screen, berserker_core, flame_points)
+            
+            # Efectos de llamas (partículas)
+            time_val = pygame.time.get_ticks() * 0.01
+            for i in range(6):
+                flame_x = x + math.cos(time_val + i) * radius * 0.3
+                flame_y = y + math.sin(time_val + i) * radius * 0.3 + radius * 0.7
+                flame_size = int(3 + 2 * abs(math.sin(time_val * 2 + i)))
+                pygame.draw.circle(screen, berserker_core, (int(flame_x), int(flame_y)), flame_size)
+            
+            # Núcleo ardiente
+            pygame.draw.circle(screen, (255, 255, 255), (x, y), radius//3)
+            pygame.draw.circle(screen, berserker_core, (x, y), radius//4)
+            
+            pygame.draw.polygon(screen, (255, 255, 0), body_points, 2)
+            
+        elif ship_type == "guardian":
+            # Nave enemiga GUARDIAN - Diseño defensivo masivo
+            guardian_armor = (80, 120, 160)    # Azul metálico
+            guardian_shield = (150, 200, 255)  # Azul escudo
+            
+            # Cuerpo masivo y blindado
+            body_points = [
+                (x, y - radius * 0.8),        # Punta roma
+                (x - radius * 0.8, y - radius * 0.6),
+                (x - radius * 1.1, y - radius * 0.1),
+                (x - radius * 1.0, y + radius * 0.4),
+                (x - radius * 0.6, y + radius * 0.9),
+                (x, y + radius * 0.8),
+                (x + radius * 0.6, y + radius * 0.9),
+                (x + radius * 1.0, y + radius * 0.4),
+                (x + radius * 1.1, y - radius * 0.1),
+                (x + radius * 0.8, y - radius * 0.6),
+            ]
+            pygame.draw.polygon(screen, guardian_armor, body_points)
+            
+            # Escudo energético rotatorio
+            time_val = pygame.time.get_ticks() * 0.005
+            for i in range(8):
+                angle = time_val + i * math.pi / 4
+                shield_x = x + math.cos(angle) * radius * 1.3
+                shield_y = y + math.sin(angle) * radius * 1.3
+                shield_size = 4 + int(2 * abs(math.sin(time_val * 3 + i)))
+                pygame.draw.circle(screen, guardian_shield, (int(shield_x), int(shield_y)), shield_size)
+            
+            # Torretas defensivas
+            for angle_offset in [0, math.pi/2, math.pi, 3*math.pi/2]:
+                turret_x = x + math.cos(angle_offset) * radius * 0.6
+                turret_y = y + math.sin(angle_offset) * radius * 0.6
+                pygame.draw.circle(screen, (200, 200, 200), (int(turret_x), int(turret_y)), radius//6)
+                pygame.draw.circle(screen, hostile_energy, (int(turret_x), int(turret_y)), radius//8)
+            
+            # Núcleo blindado
+            pygame.draw.circle(screen, guardian_shield, (x, y), radius//2)
+            pygame.draw.circle(screen, guardian_armor, (x, y), radius//3)
+            
+            pygame.draw.polygon(screen, guardian_shield, body_points, 3)
+            
+        elif ship_type == "artillero":
+            # Nave enemiga artillero - Diseño de artillería pesada
             
             # Cuerpo principal (forma de caza estelar hostil)
             body_points = [
@@ -361,10 +601,39 @@ class Spaceship:
             # Detalles hostiles
             pygame.draw.line(screen, hostile_energy, (x - radius//2, y - radius//4), (x + radius//2, y - radius//4), 2)
             
-        # Contorno hostil
-        if ship_type == "volador":
-            pygame.draw.polygon(screen, hostile_energy, core_points, 2)
-        else:
+            pygame.draw.polygon(screen, hostile_energy, body_points, 2)
+            
+        else:  # terrestre (default)
+            # Nave enemiga terrestre - Diseño básico
+            
+            # Cuerpo principal (forma de caza estelar hostil)
+            body_points = [
+                (x, y - radius * 0.9),        # Punta frontal
+                (x - radius * 0.4, y - radius * 0.6),  # Hombro izq
+                (x - radius * 0.8, y - radius * 0.1),  # Ala izq
+                (x - radius * 0.6, y + radius * 0.7),  # Motor izq
+                (x - radius * 0.2, y + radius * 0.5),  # Centro trasero izq
+                (x, y + radius * 0.3),        # Centro trasero
+                (x + radius * 0.2, y + radius * 0.5),  # Centro trasero der
+                (x + radius * 0.6, y + radius * 0.7),  # Motor der
+                (x + radius * 0.8, y - radius * 0.1),  # Ala der
+                (x + radius * 0.4, y - radius * 0.6),  # Hombro der
+            ]
+            pygame.draw.polygon(screen, alien_hull, body_points)
+            
+            # Motores traseros
+            pygame.draw.circle(screen, (255, 150, 0), (x - radius//3, y + radius//2), radius//6)
+            pygame.draw.circle(screen, (255, 150, 0), (x + radius//3, y + radius//2), radius//6)
+            
+            # Cabina de mando (angular)
+            cockpit_points = [
+                (x, y - radius * 0.6),
+                (x - radius * 0.2, y - radius * 0.2),
+                (x, y),
+                (x + radius * 0.2, y - radius * 0.2)
+            ]
+            pygame.draw.polygon(screen, (150, 150, 200), cockpit_points)
+            
             pygame.draw.polygon(screen, hostile_energy, body_points, 2)
 
 
@@ -980,3 +1249,193 @@ def draw_space_hazard(screen: pygame.Surface, center: Tuple[int, int], hazard_ty
             particle_size = random.randint(1, 2)
             particle_color = (255, random.randint(0, 100), 0)
             pygame.draw.circle(screen, particle_color, (int(particle_x), int(particle_y)), particle_size)
+
+
+class ExplosionEffect:
+    """Efecto visual de explosión mejorado."""
+    
+    def __init__(self, x: float, y: float, max_radius: float, duration: float = 1.0):
+        self.x = x
+        self.y = y
+        self.max_radius = max_radius
+        self.duration = duration
+        self.timer = 0.0
+        self.particles = []
+        self.shockwave_particles = []
+        
+        # Generar partículas de explosión
+        num_particles = int(max_radius * 0.8)  # Más partículas para explosiones grandes
+        for i in range(num_particles):
+            angle = random.random() * 2 * math.pi
+            speed = random.uniform(50, max_radius * 2)
+            particle_x = x
+            particle_y = y
+            vel_x = math.cos(angle) * speed
+            vel_y = math.sin(angle) * speed
+            
+            # Diferentes tipos de partículas
+            if i < num_particles * 0.6:  # 60% partículas de fuego
+                color = (255, random.randint(100, 255), random.randint(0, 50))
+                lifetime = random.uniform(0.5, 0.8)
+                size = random.uniform(2, 5)
+            elif i < num_particles * 0.8:  # 20% partículas de humo
+                gray = random.randint(60, 120)
+                color = (gray, gray, gray)
+                lifetime = random.uniform(0.8, 1.2)
+                size = random.uniform(3, 7)
+            else:  # 20% chispas brillantes
+                color = (255, 255, random.randint(200, 255))
+                lifetime = random.uniform(0.3, 0.6)
+                size = random.uniform(1, 3)
+            
+            particle = {
+                'x': particle_x,
+                'y': particle_y,
+                'vel_x': vel_x,
+                'vel_y': vel_y,
+                'color': color,
+                'lifetime': lifetime,
+                'max_lifetime': lifetime,
+                'size': size,
+                'type': 'fire' if i < num_particles * 0.6 else ('smoke' if i < num_particles * 0.8 else 'spark')
+            }
+            self.particles.append(particle)
+        
+        # Generar partículas de onda expansiva
+        num_shockwave = int(max_radius * 0.2)
+        for i in range(num_shockwave):
+            angle = (i / num_shockwave) * 2 * math.pi
+            particle = {
+                'angle': angle,
+                'radius': 0.0,
+                'max_radius': max_radius * 1.5,
+                'speed': max_radius * 4,
+                'alpha': 255,
+                'color': (255, 200, 0)
+            }
+            self.shockwave_particles.append(particle)
+    
+    def update(self, dt: float):
+        """Actualiza el efecto de explosión."""
+        self.timer += dt
+        
+        # Actualizar partículas principales
+        for particle in self.particles[:]:
+            particle['x'] += particle['vel_x'] * dt
+            particle['y'] += particle['vel_y'] * dt
+            particle['lifetime'] -= dt
+            
+            # Aplicar fricción y gravedad
+            particle['vel_x'] *= 0.98
+            particle['vel_y'] *= 0.98
+            if particle['type'] == 'smoke':
+                particle['vel_y'] -= 20 * dt  # El humo sube
+            
+            if particle['lifetime'] <= 0:
+                self.particles.remove(particle)
+        
+        # Actualizar partículas de onda expansiva
+        for particle in self.shockwave_particles[:]:
+            particle['radius'] += particle['speed'] * dt
+            particle['alpha'] = int(255 * (1 - particle['radius'] / particle['max_radius']))
+            
+            if particle['radius'] >= particle['max_radius'] or particle['alpha'] <= 0:
+                self.shockwave_particles.remove(particle)
+    
+    def draw(self, screen: pygame.Surface):
+        """Dibuja el efecto de explosión."""
+        if not self.is_alive():
+            return
+        
+        # Dibujar onda expansiva (círculos concéntricos)
+        progress = self.timer / self.duration
+        current_radius = self.max_radius * progress
+        
+        # Múltiples ondas expansivas
+        for wave in range(3):
+            wave_radius = current_radius - wave * 10
+            if wave_radius > 0:
+                alpha = int(100 * (1 - progress) * (1 - wave * 0.3))
+                if alpha > 0:
+                    # Crear superficie con alpha para la onda
+                    wave_surf = pygame.Surface((wave_radius * 2 + 20, wave_radius * 2 + 20), pygame.SRCALPHA)
+                    wave_color = (255, 150 - wave * 40, 0, alpha)
+                    pygame.draw.circle(wave_surf, wave_color, (int(wave_radius + 10), int(wave_radius + 10)), int(wave_radius), 3)
+                    screen.blit(wave_surf, (self.x - wave_radius - 10, self.y - wave_radius - 10))
+        
+        # Dibujar partículas de onda expansiva
+        for particle in self.shockwave_particles:
+            if particle['alpha'] > 0:
+                pos_x = self.x + math.cos(particle['angle']) * particle['radius']
+                pos_y = self.y + math.sin(particle['angle']) * particle['radius']
+                
+                surf = pygame.Surface((6, 6), pygame.SRCALPHA)
+                color_with_alpha = (*particle['color'], particle['alpha'])
+                pygame.draw.circle(surf, color_with_alpha, (3, 3), 3)
+                screen.blit(surf, (pos_x - 3, pos_y - 3))
+        
+        # Dibujar partículas principales
+        for particle in self.particles:
+            if particle['lifetime'] > 0:
+                alpha_ratio = particle['lifetime'] / particle['max_lifetime']
+                alpha = int(255 * alpha_ratio)
+                current_size = int(particle['size'] * alpha_ratio)
+                
+                if alpha > 0 and current_size > 0:
+                    surf = pygame.Surface((current_size * 2, current_size * 2), pygame.SRCALPHA)
+                    
+                    # Color con alpha
+                    if particle['type'] == 'fire':
+                        color = (*particle['color'], alpha)
+                    elif particle['type'] == 'smoke':
+                        # El humo se vuelve más transparente
+                        smoke_alpha = int(alpha * 0.6)
+                        color = (*particle['color'], smoke_alpha)
+                    else:  # spark
+                        color = (*particle['color'], alpha)
+                    
+                    pygame.draw.circle(surf, color, (current_size, current_size), current_size)
+                    screen.blit(surf, (particle['x'] - current_size, particle['y'] - current_size))
+        
+        # Flash central (durante los primeros momentos)
+        if progress < 0.2:
+            flash_intensity = (0.2 - progress) / 0.2
+            flash_radius = int(self.max_radius * 0.3 * flash_intensity)
+            if flash_radius > 0:
+                flash_surf = pygame.Surface((flash_radius * 2, flash_radius * 2), pygame.SRCALPHA)
+                flash_alpha = int(200 * flash_intensity)
+                pygame.draw.circle(flash_surf, (255, 255, 255, flash_alpha), 
+                                 (flash_radius, flash_radius), flash_radius)
+                screen.blit(flash_surf, (self.x - flash_radius, self.y - flash_radius))
+    
+    def is_alive(self) -> bool:
+        """Verifica si el efecto sigue activo."""
+        return self.timer < self.duration or len(self.particles) > 0 or len(self.shockwave_particles) > 0
+
+
+class ExplosionManager:
+    """Gestor de efectos de explosión."""
+    
+    def __init__(self):
+        self.explosions: List[ExplosionEffect] = []
+    
+    def add_explosion(self, x: float, y: float, radius: float, duration: float = 1.0):
+        """Agrega una nueva explosión."""
+        explosion = ExplosionEffect(x, y, radius, duration)
+        self.explosions.append(explosion)
+    
+    def update(self, dt: float):
+        """Actualiza todas las explosiones."""
+        for explosion in self.explosions[:]:
+            explosion.update(dt)
+            if not explosion.is_alive():
+                self.explosions.remove(explosion)
+    
+    def draw(self, screen: pygame.Surface):
+        """Dibuja todas las explosiones."""
+        for explosion in self.explosions:
+            explosion.draw(screen)
+    
+    def clear(self):
+        """Limpia todas las explosiones."""
+        self.explosions.clear()
