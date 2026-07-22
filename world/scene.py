@@ -5,9 +5,7 @@ Contiene la clase Escenario que maneja la generación y gestión del mundo.
 import random
 from typing import List
 from entities.enemy import Enemigo
-from world.objects import (TrampaExplosiva, Tesoro, ArmamentoDefensa, Meteorito,
-                          EscudoEnergia, ImpulsoVelocidad, MejoraArmas, ReparacionNano,
-                          DrenajeEscudo, VirulenciaEspacial, InterferenciaSistemas, RadiacionCosmica)
+from world.objects import TrampaExplosiva, Tesoro, ArmamentoDefensa, Meteorito
 
 
 class Escenario:
@@ -32,12 +30,9 @@ class Escenario:
         self.treasures: List[Tesoro] = []
         self.items_ground: List[ArmamentoDefensa] = []
         self.meteorites: List[Meteorito] = []
-        # Nuevos objetos espaciales
-        self.power_ups: List = []  # Power-ups (ventajas)
-        self.hazards: List = []    # Peligros (desventajas)
 
     def generate(self, n_enemies: int = 5, n_treasures: int = 4, n_traps: int = 3, 
-                n_meteorites: int = 2, n_power_ups: int = 2, n_hazards: int = 2) -> None:
+                n_meteorites: int = 2) -> None:
         """
         Genera un nuevo escenario completo con todos los objetos espaciales.
         
@@ -138,44 +133,8 @@ class Escenario:
             size = random.choice([1, 1, 2, 3])  # Más probabilidad de pequeños
             self.meteorites.append(Meteorito(x, y, size))
         
-        # Generar power-ups (ventajas espaciales)
-        self.power_ups = []
-        power_up_classes = [EscudoEnergia, ImpulsoVelocidad, MejoraArmas, ReparacionNano]
-        for _ in range(n_power_ups):
-            x = random.uniform(80, self.width - 80)
-            y = random.uniform(80, self.height - 80)
-            power_up_class = random.choice(power_up_classes)
-            self.power_ups.append(power_up_class(x, y))
-        
-        # Generar peligros espaciales (desventajas)
-        self.hazards = []
-        hazard_classes = [DrenajeEscudo, VirulenciaEspacial, InterferenciaSistemas, RadiacionCosmica]
-        for _ in range(n_hazards):
-            x = random.uniform(80, self.width - 80)
-            y = random.uniform(80, self.height - 80)
-            hazard_class = random.choice(hazard_classes)
-            self.hazards.append(hazard_class(x, y))
-    
     def update_space_objects(self, dt: float) -> None:
-        """
-        Actualiza todos los objetos espaciales (power-ups y peligros).
-        
-        Args:
-            dt: Delta time en segundos
-        """
-        # Actualizar power-ups
-        for power_up in self.power_ups[:]:
-            power_up.update(dt)
-            # Remover power-ups expirados
-            if hasattr(power_up, 'lifetime') and power_up.lifetime <= 0:
-                self.power_ups.remove(power_up)
-        
-        # Actualizar peligros
-        for hazard in self.hazards[:]:
-            hazard.update(dt)
-            # Remover peligros expirados
-            if hasattr(hazard, 'lifetime') and hazard.lifetime <= 0:
-                self.hazards.remove(hazard)
+        pass
     
     def clear_all(self) -> None:
         """Limpia todos los objetos del escenario."""
@@ -184,8 +143,6 @@ class Escenario:
         self.treasures.clear()
         self.items_ground.clear()
         self.meteorites.clear()
-        self.power_ups.clear()
-        self.hazards.clear()
     
     def get_all_objects(self) -> dict:
         """
@@ -197,7 +154,5 @@ class Escenario:
             'traps': self.traps,
             'treasures': self.treasures,
             'items_ground': self.items_ground,
-            'meteorites': self.meteorites,
-            'power_ups': self.power_ups,
-            'hazards': self.hazards
+            'meteorites': self.meteorites
         }

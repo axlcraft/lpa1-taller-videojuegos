@@ -2,6 +2,7 @@
 Sistema mejorado de power-ups y mejoras para el juego.
 Incluye diferentes tipos de mejoras con efectos únicos.
 """
+import math
 import random
 from typing import List, Dict, Any
 from entities.base import Figura
@@ -127,8 +128,6 @@ class PowerUp(Figura):
     def update(self, dt: float) -> None:
         """Actualiza el power-up (animación)."""
         self.animation_timer += dt * 3.0
-        # Animación de flotación
-        import math
         self.pos.y += math.sin(self.animation_timer) * 0.5
         
     def apply_effect(self, player) -> None:
@@ -141,13 +140,8 @@ class PowerUp(Figura):
         if self.power_type == PowerUpType.HEALTH:
             player.hp = min(player.max_hp, player.hp + self.value)
         elif self.power_type == PowerUpType.SHIELD:
-            if not hasattr(player, 'shield'):
-                player.shield = 0
             player.shield += self.value
         else:
-            # Para efectos temporales, añadirlos a la lista de efectos activos
-            if not hasattr(player, 'active_effects'):
-                player.active_effects = {}
             player.active_effects[self.power_type] = {
                 'duration': self.duration,
                 'value': self.value,

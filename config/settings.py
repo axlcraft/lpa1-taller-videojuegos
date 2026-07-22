@@ -94,3 +94,21 @@ COLORS = {
     'particle': (100, 150, 255),
     'explosion': (255, 100, 50)
 }
+
+
+def get_stellar_background_color(level: int) -> tuple:
+    if 1 <= level <= len(STELLAR_BODIES):
+        return STELLAR_BODIES[level - 1]["bg_color"]
+    return (5, 5, 15)
+
+
+def get_stellar_accent_color(level: int) -> tuple:
+    if 1 <= level <= len(STELLAR_BODIES):
+        return STELLAR_BODIES[level - 1]["accent"]
+    return (200, 200, 255)
+
+
+def get_stellar_name(level: int) -> str:
+    if 1 <= level <= len(STELLAR_BODIES):
+        return STELLAR_BODIES[level - 1]["name"]
+    return "Espacio Profundo"

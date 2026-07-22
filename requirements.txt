@@ -1,2 +1,3 @@
 # Dependencias del juego
 pygame>=2.0.1
+numpy>=1.24.0

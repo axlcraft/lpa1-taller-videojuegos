@@ -72,30 +72,22 @@ class BossEnemy(Enemigo):
         # Initialize as regular enemy first
         super().__init__(x, y, "boss")
         
-        # Override with boss-specific stats that scale with level (escalado agresivo)
+        # Override with boss-specific stats that scale with level
         if level <= 10:
-            # Escalado normal para niveles 1-10
-            hp_bonus = level * 20
-            attack_bonus = level * 5
-            defense_bonus = level * 2
-            speed_bonus = level * 3
+            hp_mult = level * 20
+            atk_mult = level * 5
+            def_mult = level * 2
+            spd_mult = level * 3
         else:
-            # Escalado más agresivo para niveles 11-18
-            base_hp = 80 + (10 * 20)  # HP at level 10
-            base_attack = 25 + (10 * 5)  # Attack at level 10
-            base_defense = 8 + (10 * 2)  # Defense at level 10
-            base_speed = 30 + (10 * 3)  # Speed at level 10
-            
-            extra_levels = level - 10
-            hp_bonus = (10 * 20) + (extra_levels * 40)  # Double scaling for HP
-            attack_bonus = (10 * 5) + (extra_levels * 12)  # 2.4x scaling for attack
-            defense_bonus = (10 * 2) + (extra_levels * 5)  # 2.5x scaling for defense
-            speed_bonus = (10 * 3) + (extra_levels * 6)  # 2x scaling for speed
-            
-        self.hp = 80 + hp_bonus
-        self.attack = 25 + attack_bonus
-        self.defense = 8 + defense_bonus
-        self.speed = 30 + speed_bonus
+            hp_mult = (10 * 20) + (level - 10) * 40
+            atk_mult = (10 * 5) + (level - 10) * 12
+            def_mult = (10 * 2) + (level - 10) * 5
+            spd_mult = (10 * 3) + (level - 10) * 6
+
+        self.hp = 80 + hp_mult
+        self.attack = 25 + atk_mult
+        self.defense = 8 + def_mult
+        self.speed = 30 + spd_mult
         
         self.level = level
         self.size = 60  # Larger than regular enemies

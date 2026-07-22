@@ -2,6 +2,7 @@
 Game Manager - Núcleo del juego.
 Contiene la clase GameManager que maneja el bucle principal, eventos, y renderizado.
 """
+import math
 import pygame
 from typing import List, Optional
 from entities.player import Jugador
@@ -12,7 +13,7 @@ from world.scene import Escenario
 from world.objects import TrampaExplosiva, Tesoro, ArmamentoDefensa, Meteorito
 from utils.math import Vector2D
 from core.game_states import GameState, Button, InputField, SpaceBackground
-from core.visual_effects import DamageEffect, Spaceship, Explosion, EngineTrail, get_stellar_name, draw_explosive_trap, draw_intergalactic_eye_boss, draw_meteorite, draw_power_up, draw_space_hazard, ExplosionManager
+from core.visual_effects import DamageEffect, Spaceship, Explosion, EngineTrail, draw_explosive_trap, draw_intergalactic_eye_boss, draw_meteorite, ExplosionManager
 from core.shop import Shop
 from core.sound_manager import SoundManager
 from core.character_system import CharacterManager, CharacterSelector
@@ -22,7 +23,8 @@ from config.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, PLAYER_RADIUS, ENEMY_RADIUS, 
     PROJECTILE_RADIUS, TRAP_RADIUS, TREASURE_RADIUS, XP_PER_KILL, 
     XP_PER_TREASURE_VALUE, COLORS, MAX_LEVELS, ENEMIES_PER_LEVEL,
-    TREASURES_PER_LEVEL, TRAPS_PER_LEVEL, VICTORY_SCORE_THRESHOLD
+    TREASURES_PER_LEVEL, TRAPS_PER_LEVEL, VICTORY_SCORE_THRESHOLD,
+    get_stellar_background_color, get_stellar_accent_color, get_stellar_name
 )
 
 
@@ -472,7 +474,6 @@ class GameManager:
             self.scene = Escenario(SCREEN_WIDTH, SCREEN_HEIGHT, difficulty, self.current_level)
             
             # Aplicar tema estelar del nivel
-            from core.visual_effects import get_stellar_background_color, get_stellar_accent_color, get_stellar_name
             bg_color = get_stellar_background_color(self.current_level)
             star_color = get_stellar_accent_color(self.current_level)
             stellar_name = get_stellar_name(self.current_level)
@@ -493,9 +494,7 @@ class GameManager:
                     n_enemies=regular_enemies,
                     n_treasures=TREASURES_PER_LEVEL[self.current_level - 1],
                     n_traps=TRAPS_PER_LEVEL[self.current_level - 1],
-                    n_meteorites=min(3, 1 + self.current_level // 3),
-                    n_power_ups=min(3, 1 + self.current_level // 4),  # Power-ups más raros
-                    n_hazards=min(2, 1 + self.current_level // 5)     # Peligros aún más raros
+                    n_meteorites=min(3, 1 + self.current_level // 3)
                 )
                 
                 # Spawn boss enemy in center of screen
@@ -508,9 +507,7 @@ class GameManager:
                     n_enemies=ENEMIES_PER_LEVEL[self.current_level - 1],
                     n_treasures=TREASURES_PER_LEVEL[self.current_level - 1],
                     n_traps=TRAPS_PER_LEVEL[self.current_level - 1],
-                    n_meteorites=min(4, 2 + self.current_level // 2),
-                    n_power_ups=min(4, 2 + self.current_level // 3),  # Más power-ups en niveles normales
-                    n_hazards=min(3, 1 + self.current_level // 4)     # Más peligros gradualmente
+                    n_meteorites=min(4, 2 + self.current_level // 2)
                 )
                 print(f"¡Nivel {self.current_level} cargado! Enemigos: {ENEMIES_PER_LEVEL[self.current_level - 1]}")
             
@@ -628,23 +625,28 @@ class GameManager:
             moving = any([keys[pygame.K_w], keys[pygame.K_s], keys[pygame.K_a], keys[pygame.K_d]])
             self.player_engine_trail.update(dt, self.player.pos, moving)
 
+        # Limitar número máximo de proyectiles
+        if len(self.projectiles) > 100:
+            self.projectiles = self.projectiles[-100:]
+        
         # Actualizar proyectiles del jugador
         for p in list(self.projectiles):
             p.update(dt)
-            # Eliminar proyectiles fuera de pantalla o inactivos
             if (p.pos.x < -10 or p.pos.x > SCREEN_WIDTH + 10 or 
                 p.pos.y < -10 or p.pos.y > SCREEN_HEIGHT + 10) or not p.activo:
                 self.projectiles.remove(p)
         
-        # Actualizar proyectiles enemigos (láser de boss)
+        # Actualizar proyectiles enemigos (láser de boss y enemigos)
         for ep in list(self.enemy_projectiles):
             ep.update(dt)
-            # Eliminar proyectiles enemigos fuera de pantalla o inactivos
             if (ep.pos.x < -50 or ep.pos.x > SCREEN_WIDTH + 50 or 
                 ep.pos.y < -50 or ep.pos.y > SCREEN_HEIGHT + 50) or not ep.activo:
                 self.enemy_projectiles.remove(ep)
+                continue
             
-            # Colisión proyectil enemigo -> jugador
+            if not ep.can_damage_player():
+                continue
+            
             dist = (Vector2D(ep.pos.x, ep.pos.y) - self.player.pos).magnitude()
             if dist <= self.player.radio + ep.radio:
                 dmg = max(0, ep.damage - self.player.defense)
@@ -654,12 +656,13 @@ class GameManager:
                     self.enemy_projectiles.remove(ep)
                 
                 if dealt > 0:
-                    print(f"¡Láser enemigo impacta! {dealt} daño. HP={self.player.hp}")
-                    # Activar efecto de daño
+                    self.floating_text.add_text(
+                        self.player.pos.x, self.player.pos.y - 20,
+                        f"-{dealt} HP",
+                        "damage"
+                    )
                     self.damage_effect.trigger(intensity=min(dealt, 15))
-                    # Reproducir sonido de daño
                     self.sound_manager.play_sound('damage')
-                    # Establecer causa de muerte si el jugador muere
                     if self.player.hp <= 0:
                         self.death_cause = "boss_laser"
 
@@ -674,9 +677,6 @@ class GameManager:
                 self.projectiles = e.check_weak_point_hits(self.projectiles)
                 
                 # Add boss projectiles to scene (enemy projectiles)
-                if not hasattr(self, 'enemy_projectiles'):
-                    self.enemy_projectiles = []
-                    
                 # Play boss laser sound when boss fires
                 if boss_projectiles:
                     self.sound_manager.play_sound('boss_laser')
@@ -747,21 +747,21 @@ class GameManager:
 
             # Colisión enemigo -> jugador (combate cuerpo a cuerpo)
             if e.collides_with(self.player):
-                dmg = max(0, e.attack - self.player.defense)
+                dmg = max(0, e.get_contact_damage() - self.player.defense)
                 dealt = self.player.receive_damage(dmg)
                 if dealt > 0:
-                    print(f"Recibiste {dealt} de daño. HP={self.player.hp}")
-                    # Activar efecto de daño
+                    self.floating_text.add_text(
+                        self.player.pos.x, self.player.pos.y - 20,
+                        f"-{dealt} HP",
+                        "damage"
+                    )
                     self.damage_effect.trigger(intensity=min(dealt, 10))
-                    # Reproducir sonido de daño
                     self.sound_manager.play_sound('damage')
-                    # Establecer causa de muerte si el jugador muere
                     if self.player.hp <= 0:
                         if isinstance(e, BossEnemy):
                             self.death_cause = "boss_contact"
                         else:
                             self.death_cause = "enemy_contact"
-                # Pequeño retroceso
                 vec = Vector2D(self.player.pos.x - e.pos.x, self.player.pos.y - e.pos.y).normalized()
                 self.player.pos = Vector2D(self.player.pos.x + vec.x * 8, self.player.pos.y + vec.y * 8)
 
@@ -847,7 +847,6 @@ class GameManager:
                         self.score += 15
                     else:
                         # Meteorito grande/mediano se fragmenta en 2 pequeños
-                        import random
                         self.explosions.append(Explosion(Vector2D(meteorite.pos.x, meteorite.pos.y), 25))
                         
                         # Crear fragmentos
@@ -866,54 +865,7 @@ class GameManager:
                     self.sound_manager.play_sound('explosion')
                     break  # Solo un proyectil por meteorito
 
-        # Actualizar objetos espaciales (power-ups y peligros)
-        self.scene.update_space_objects(dt)
-        
-        # Colisiones con power-ups (ventajas)
-        for power_up in list(self.scene.power_ups):
-            if power_up.collides_with(self.player.pos, self.player.radio):
-                # Aplicar efecto del power-up
-                power_up.apply_effect(self.player)
-                
-                # Agregar texto flotante para power-up
-                self.floating_text.add_text(
-                    self.player.pos.x, self.player.pos.y - 20,
-                    f"+{power_up.__class__.__name__}", 
-                    "item"  # Usar tipo "item" para power-ups
-                )
-                
-                # Remover power-up
-                self.scene.power_ups.remove(power_up)
-                
-                # Sonido de power-up
-                self.sound_manager.play_sound('pickup')  # Reutilizar sonido de pickup
-                
-                # Puntos por recoger power-up
-                self.score += 25
-
-        # Colisiones con peligros espaciales (desventajas)
-        for hazard in list(self.scene.hazards):
-            if hazard.collides_with(self.player.pos, self.player.radio):
-                # Aplicar efecto del peligro
-                hazard.apply_effect(self.player)
-                
-                # Agregar texto flotante para peligro
-                self.floating_text.add_text(
-                    self.player.pos.x, self.player.pos.y - 20,
-                    f"-{hazard.__class__.__name__}",
-                    "damage"  # Usar tipo "damage" para peligros
-                )
-                
-                # Remover peligro
-                self.scene.hazards.remove(hazard)
-                
-                # Sonido de daño
-                self.sound_manager.play_sound('damage')  # Reutilizar sonido de daño
-                
-                # Puntos negativos por tocar peligro
-                self.score = max(0, self.score - 15)
-
-        # Colisiones con power-ups del nuevo sistema
+        # Colisiones con power-ups
         collected_powerups = self.powerup_manager.check_collisions(self.player)
         for power_up in collected_powerups:
             power_up.apply_effect(self.player)
@@ -924,70 +876,7 @@ class GameManager:
             )
             self.sound_manager.play_sound('powerup_pickup')
 
-        # Colisiones jugador vs enemigos (daño por contacto)
-        for enemy in self.scene.enemies:
-            if enemy.hp <= 0:
-                continue
-                
-            distance = ((self.player.pos.x - enemy.pos.x) ** 2 + 
-                       (self.player.pos.y - enemy.pos.y) ** 2) ** 0.5
-            
-            if distance < (self.player.radio + enemy.radio):
-                # Aplicar daño por contacto
-                contact_damage = enemy.get_contact_damage()
-                damage_dealt = self.player.receive_damage(contact_damage)
-                
-                if damage_dealt > 0:
-                    # Efectos visuales y sonoros
-                    self.floating_text.add_text(
-                        self.player.pos.x, self.player.pos.y - 20,
-                        f"-{damage_dealt} HP",
-                        "damage"
-                    )
-                    self.sound_manager.play_sound('damage')
-                    
-                    # Efecto de daño visual
-                    self.damage_effect.trigger()
-                    
-                    print(f"Contacto con {enemy.tipo}: -{damage_dealt} HP (restante: {self.player.hp})")
-
-        # Colisiones proyectiles enemigos vs jugador
-        for projectile in list(self.enemy_projectiles):
-            # Actualizar proyectil
-            projectile.update(dt)
-            
-            # Verificar si sale de pantalla o expira
-            if (projectile.pos.x < -50 or projectile.pos.x > SCREEN_WIDTH + 50 or
-                projectile.pos.y < -50 or projectile.pos.y > SCREEN_HEIGHT + 50 or
-                not projectile.activo):
-                self.enemy_projectiles.remove(projectile)
-                continue
-                
-            # Verificar colisión con jugador
-            if projectile.can_damage_player():
-                distance = ((self.player.pos.x - projectile.pos.x) ** 2 + 
-                           (self.player.pos.y - projectile.pos.y) ** 2) ** 0.5
-                
-                if distance < (self.player.radio + projectile.radio):
-                    # Aplicar daño del proyectil
-                    damage_dealt = self.player.receive_damage(projectile.damage)
-                    
-                    if damage_dealt > 0:
-                        # Efectos visuales y sonoros
-                        self.floating_text.add_text(
-                            self.player.pos.x, self.player.pos.y - 20,
-                            f"-{damage_dealt} HP",
-                            "damage"
-                        )
-                        self.sound_manager.play_sound('damage')
-                        
-                        # Efecto de daño visual
-                        self.damage_effect.trigger()
-                        
-                        print(f"Proyectil enemigo: -{damage_dealt} HP (restante: {self.player.hp})")
-                    
-                    # Remover proyectil
-                    self.enemy_projectiles.remove(projectile)
+        # Colisiones jugador vs enemigos (daño por contacto) - manejado arriba en L748-766
 
         # Verificar condiciones de victoria/derrota
         if self.player.hp <= 0:
@@ -1036,47 +925,6 @@ class GameManager:
         }
         return death_messages.get(self.death_cause, death_messages["unknown"])
 
-    def draw_hud(self) -> None:
-        """Dibuja la interfaz de usuario (HUD)."""
-        if not self.player:
-            return
-            
-        # Fondo del HUD superior
-        hud_rect = pygame.Rect(0, 0, SCREEN_WIDTH, 36)
-        pygame.draw.rect(self.screen, COLORS['hud_background'], hud_rect)
-        
-        # Nombre del piloto y nivel del juego
-        pilot_text = self.font.render(f"Piloto: {self.player_name}", True, COLORS['yellow'])
-        level_text = self.font.render(f"Nivel: {self.current_level}/{MAX_LEVELS}", True, COLORS['white'])
-        
-        # Nombre del cuerpo estelar actual
-        stellar_name = get_stellar_name(self.current_level)
-        stellar_text = self.font.render(f"Sector: {stellar_name}", True, COLORS['cyan'])
-        
-        # Estadísticas del jugador
-        hp_text = self.font.render(f"HP: {self.player.hp}", True, COLORS['white'])
-        player_lvl_text = self.font.render(f"LVL: {self.player.level}", True, COLORS['white'])
-        xp_text = self.font.render(f"XP: {self.player.xp}/{self.player.xp_to_next}", True, COLORS['white'])
-        gold_text = self.font.render(f"Oro: {self.player.gold}", True, COLORS['yellow'])
-        # Score con indicador de progreso hacia victoria
-        score_color = COLORS['green'] if self.score >= VICTORY_SCORE_THRESHOLD else COLORS['gray']
-        score_text = self.font.render(f"Puntos: {self.score}/{VICTORY_SCORE_THRESHOLD}", True, score_color)
-        
-        # Información de enemigos restantes
-        enemies_left = len(self.scene.enemies) if self.scene else 0
-        enemies_text = self.font.render(f"Enemigos: {enemies_left}", True, COLORS['enemy'])
-
-        # Posicionar textos en el HUD
-        self.screen.blit(pilot_text, (8, 6))
-        self.screen.blit(level_text, (180, 6))
-        self.screen.blit(stellar_text, (300, 6))
-        self.screen.blit(hp_text, (450, 6))
-        self.screen.blit(player_lvl_text, (520, 6))
-        self.screen.blit(xp_text, (580, 6))
-        self.screen.blit(gold_text, (720, 6))
-        self.screen.blit(score_text, (820, 6))
-        self.screen.blit(enemies_text, (920, 6))
-    
     def draw_hud_on_surface(self, surface: pygame.Surface) -> None:
         """Dibuja el HUD en una superficie específica (para el shake effect)."""
         if not self.player:
@@ -1103,25 +951,18 @@ class GameManager:
         score_color = COLORS['green'] if self.score >= VICTORY_SCORE_THRESHOLD else COLORS['gray']
         score_text = self.font.render(f"Puntos: {self.score}/{VICTORY_SCORE_THRESHOLD}", True, score_color)
         
-        # Información de enemigos restantes
-        enemies_left = len(self.scene.enemies) if self.scene else 0
-        enemies_text = self.font.render(f"Enemigos: {enemies_left}", True, COLORS['enemy'])
-
-        # Información adicional del sistema mejorado
         shield_text = self.font.render(f"Escudo: {self.player.shield}", True, COLORS['cyan'])
-        weapon_text = self.font.render(f"Arma: {self.player.current_weapon.name}", True, COLORS['white'])
         
         # Posicionar textos en el HUD
         surface.blit(pilot_text, (8, 6))
-        surface.blit(level_text, (180, 6))
-        surface.blit(stellar_text, (300, 6))
-        surface.blit(hp_text, (450, 6))
-        surface.blit(shield_text, (520, 6))
-        surface.blit(player_lvl_text, (620, 6))
-        surface.blit(xp_text, (680, 6))
-        surface.blit(gold_text, (820, 6))
-        surface.blit(score_text, (820, 6))
-        surface.blit(enemies_text, (920, 6))
+        surface.blit(level_text, (140, 6))
+        surface.blit(stellar_text, (250, 6))
+        surface.blit(hp_text, (390, 6))
+        surface.blit(shield_text, (460, 6))
+        surface.blit(player_lvl_text, (540, 6))
+        surface.blit(xp_text, (590, 6))
+        surface.blit(gold_text, (710, 6))
+        surface.blit(score_text, (800, 6))
 
     def render(self) -> None:
         """Renderiza la pantalla según el estado actual."""
@@ -1339,60 +1180,18 @@ class GameManager:
             draw_meteorite(game_surface, (int(meteorite.pos.x), int(meteorite.pos.y)), 
                           meteorite.size, meteorite.rotation)
         
-        # Dibujar power-ups (ventajas espaciales) - sistema antiguo
-        for power_up in self.scene.power_ups:
-            # Determinar tipo de power-up para el renderizado basado en el nombre de la clase
-            class_name = power_up.__class__.__name__
-            if "Escudo" in class_name:
-                power_type = "shield" 
-            elif "Velocidad" in class_name:
-                power_type = "speed"
-            elif "Armas" in class_name:
-                power_type = "weapon"
-            elif "Reparacion" in class_name:
-                power_type = "repair"
-            else:
-                power_type = "shield"  # Default
-            
-            draw_power_up(game_surface, (int(power_up.pos.x), int(power_up.pos.y)), 
-                         power_type, power_up.glow_intensity)
-                         
-        # Dibujar power-ups del nuevo sistema
+        # Dibujar power-ups
         for power_up in self.powerup_manager.power_ups:
-            # Dibujar power-up con animación
-            import math
             glow = int(100 + 55 * math.sin(power_up.animation_timer))
-            
-            # Círculo exterior con glow
             pygame.draw.circle(game_surface, (*power_up.color, glow), 
                              (int(power_up.pos.x), int(power_up.pos.y)), 
                              power_up.radio + 3)
-            # Círculo principal
             pygame.draw.circle(game_surface, power_up.color, 
                              (int(power_up.pos.x), int(power_up.pos.y)), 
                              power_up.radio)
-            # Círculo interior brillante
             pygame.draw.circle(game_surface, (255, 255, 255), 
                              (int(power_up.pos.x), int(power_up.pos.y)), 
                              power_up.radio // 2)
-        
-        # Dibujar peligros espaciales (desventajas)
-        for hazard in self.scene.hazards:
-            # Determinar tipo de peligro para el renderizado basado en el nombre de la clase
-            class_name = hazard.__class__.__name__
-            if "Drenaje" in class_name:
-                hazard_type = "shield_drain"
-            elif "Virulencia" in class_name:
-                hazard_type = "speed_reduction" 
-            elif "Interferencia" in class_name:
-                hazard_type = "weapon_malfunction"
-            elif "Radiacion" in class_name:
-                hazard_type = "radiation"
-            else:
-                hazard_type = "radiation"  # Default
-            
-            draw_space_hazard(game_surface, (int(hazard.pos.x), int(hazard.pos.y)),
-                            hazard_type, hazard.glow_intensity)
         
         # Dibujar equipamiento en el suelo
         for it in self.scene.items_ground:

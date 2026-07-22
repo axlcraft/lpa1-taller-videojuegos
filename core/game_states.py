@@ -4,9 +4,9 @@ Maneja los diferentes estados: menú, juego, transición de niveles, etc.
 """
 from enum import Enum
 from typing import Optional
-import pygame
 import math
 import random
+import pygame
 from utils.math import Vector2D
 from config.settings import SCREEN_WIDTH, SCREEN_HEIGHT, COLORS
 
@@ -232,7 +232,6 @@ class SpaceBackground:
             pygame.draw.rect(screen, color, (0, y, SCREEN_WIDTH, 4))
         
         # Efectos de calor (ondas)
-        import math
         time = pygame.time.get_ticks() * 0.001
         for i in range(5):
             wave_y = SCREEN_HEIGHT * 0.2 + i * 60 + math.sin(time + i) * 20
@@ -277,7 +276,6 @@ class SpaceBackground:
         
         # Tormenta de arena
         time = pygame.time.get_ticks() * 0.001
-        import math
         for i in range(20):
             sand_x = (i * 40 + time * 50) % (SCREEN_WIDTH + 100)
             sand_y = (i * 30 + time * 25) % SCREEN_HEIGHT
@@ -315,7 +313,6 @@ class SpaceBackground:
     def _draw_stellar_bg(self, screen: pygame.Surface, base_color: tuple):
         """Dibuja fondo estelar con efectos de estrella."""
         # Brillo estelar pulsante
-        import math
         time = pygame.time.get_ticks() * 0.002
         intensity = 0.5 + 0.5 * math.sin(time)
         

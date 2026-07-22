@@ -3,6 +3,7 @@ Objetos del mundo del juego.
 Contiene todas las clases de objetos recolectables y del entorno.
 """
 import math
+import random
 import pygame
 from typing import List, Tuple
 from utils.math import Vector2D
@@ -113,7 +114,6 @@ class Meteorito(Objeto):
             size: Tamaño del meteorito (1=pequeño, 2=mediano, 3=grande)
         """
         super().__init__(x, y, "Meteorito")
-        import random
         
         # Tamaño aleatorio si no se especifica
         self.size = size or random.randint(1, 3)

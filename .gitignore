@@ -1,1 +1,30 @@
-# depende de las librerías utilizadas, ver: https://gitignore.io
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Game data
+scores.json
+
+# Project specific
+*.pen

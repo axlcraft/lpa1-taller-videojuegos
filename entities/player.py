@@ -14,7 +14,7 @@ from config.settings import PLAYER_RADIUS, COLORS
 class Jugador(Figura):
     """Clase del jugador principal con sistema de niveles, inventario y combate."""
 
-    def __init__(self, x: float, y: float, name: str = "Hero", character_data: Optional[dict] = None):
+    def __init__(self, x: float, y: float, name: str, character_data: dict):
         """
         Inicializa el jugador.
         
@@ -24,34 +24,19 @@ class Jugador(Figura):
             name: Nombre del jugador
             character_data: Datos del personaje seleccionado
         """
-        # Configurar color y estadísticas según el personaje
-        if character_data:
-            color = character_data.get('color', COLORS['player'])
-            stats = character_data.get('stats')
-        else:
-            color = COLORS['player']
-            stats = None
+        color = character_data.get('color', COLORS['player'])
+        stats = character_data.get('stats')
             
         super().__init__(x, y, PLAYER_RADIUS, color)
         self.name = name
-        self.character_type = character_data.get('ship_type', 'fighter') if character_data else 'fighter'
+        self.character_type = character_data.get('ship_type', 'fighter')
         
-        # Aplicar estadísticas del personaje
-        if stats:
-            self.hp = stats.hp
-            self.attack = stats.attack
-            self.defense = stats.defense
-            self.move_speed = stats.move_speed
-            self.shoot_cooldown = stats.shoot_cooldown
-            self.special_ability = stats.special_ability
-        else:
-            # Valores por defecto
-            self.hp = 120
-            self.attack = 18
-            self.defense = 6
-            self.move_speed = 180.0
-            self.shoot_cooldown = 0.35
-            self.special_ability = "Ninguna"
+        self.hp = stats.hp
+        self.attack = stats.attack
+        self.defense = stats.defense
+        self.move_speed = stats.move_speed
+        self.shoot_cooldown = stats.shoot_cooldown
+        self.special_ability = stats.special_ability
             
         self.max_hp = self.hp  # Para referencia
         self.level = 1
@@ -82,6 +67,16 @@ class Jugador(Figura):
         self.base_move_speed = self.move_speed
         self.base_shoot_cooldown = self.shoot_cooldown
         self.base_attack = self.attack
+        
+        self.shield_hp = 0
+        self.speed_boost = 1.0
+        self.speed_boost_timer = 0.0
+        self.speed_penalty = 1.0
+        self.speed_penalty_timer = 0.0
+        self.weapon_boost = 0
+        self.weapon_boost_timer = 0.0
+        self.weapon_malfunction = 0
+        self.weapon_malfunction_timer = 0.0
 
     def update_timers(self, dt: float) -> None:
         """
@@ -189,7 +184,6 @@ class Jugador(Figura):
         
     def _create_multi_shot(self, base_projectile: Proyectil, direction: Vector2D) -> List[Proyectil]:
         """Crea proyectiles múltiples basados en el efecto multi-shot."""
-        import math
         projectiles = [base_projectile]
         
         # Crear proyectiles adicionales con ángulos ligeramente diferentes
@@ -209,8 +203,6 @@ class Jugador(Figura):
             projectiles.append(extra_projectile)
             
         return projectiles
-        self._shoot_timer = self.shoot_cooldown
-        return proj
         
     def can_super_shoot(self) -> bool:
         """Verifica si puede usar el super disparo."""

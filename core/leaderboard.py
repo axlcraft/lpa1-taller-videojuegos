@@ -7,6 +7,7 @@ import os
 from typing import List, Dict, Any
 from dataclasses import dataclass, asdict
 from datetime import datetime
+import pygame
 from config.settings import COLORS, SCREEN_WIDTH, SCREEN_HEIGHT
 
 
@@ -168,8 +169,6 @@ class LeaderboardScreen:
         Args:
             screen: Superficie de pygame
         """
-        import pygame
-        
         # Título
         title_text = self.big_font.render("TABLA DE PUNTUACIONES", True, COLORS['white'])
         title_rect = title_text.get_rect(center=(SCREEN_WIDTH//2, 60))
@@ -259,8 +258,6 @@ class LeaderboardScreen:
         Returns:
             Acción a realizar ('menu', 'refresh', '')
         """
-        import pygame
-        
         if key == pygame.K_ESCAPE:
             return 'menu'
         elif key == pygame.K_r:

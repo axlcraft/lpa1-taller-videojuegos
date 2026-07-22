@@ -4,6 +4,7 @@ Contiene diferentes clases de pilotos espaciales con características únicas.
 """
 from typing import Dict, Any, List
 from dataclasses import dataclass
+import pygame
 from config.settings import COLORS
 
 
@@ -145,8 +146,6 @@ class CharacterSelector:
         Returns:
             True si se seleccionó un personaje
         """
-        import pygame
-        
         if key == pygame.K_LEFT:
             self.selected_index = (self.selected_index - 1) % len(self.character_types)
             if sound_manager:
@@ -175,8 +174,6 @@ class CharacterSelector:
             screen_width: Ancho de pantalla
             screen_height: Alto de pantalla
         """
-        import pygame
-        
         # Título
         title_text = self.big_font.render("SELECCIONA TU NAVE", True, COLORS['white'])
         title_rect = title_text.get_rect(center=(screen_width//2, 80))
@@ -246,8 +243,6 @@ class CharacterSelector:
             ship_type: Tipo de nave
             color: Color de la nave
         """
-        import pygame
-        
         if ship_type == "fighter":
             # Caza - forma triangular clásica
             points = [(x, y-20), (x-15, y+15), (x+15, y+15)]

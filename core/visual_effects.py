@@ -2,12 +2,13 @@
 Efectos visuales del juego.
 Contiene efectos de daño, explosiones, y gráficos de naves espaciales.
 """
-import pygame
 import math
 import random
+import time
+import pygame
 from typing import List, Tuple
 from utils.math import Vector2D
-from config.settings import COLORS
+from config.settings import COLORS, get_stellar_background_color, get_stellar_accent_color, get_stellar_name
 
 
 class DamageEffect:
@@ -762,7 +763,6 @@ def draw_explosive_trap(screen: pygame.Surface, pos: Vector2D, radius: int, arme
         pygame.draw.circle(screen, detail_color, center, radius - 4, 2)
         
         # Luz de activación (roja parpadeante)
-        import time
         if int(time.time() * 3) % 2:  # Parpadeo cada 0.33 segundos
             light_color = (255, 50, 50)
             pygame.draw.circle(screen, light_color, 
@@ -786,30 +786,6 @@ def draw_explosive_trap(screen: pygame.Surface, pos: Vector2D, radius: int, arme
             offset_y = random.randint(-radius, radius)
             pygame.draw.circle(screen, debris_color, 
                              (center[0] + offset_x, center[1] + offset_y), 2)
-
-
-def get_stellar_background_color(level: int) -> Tuple[int, int, int]:
-    """Obtiene el color de fondo basado en el cuerpo estelar del nivel."""
-    from config.settings import STELLAR_BODIES
-    if 1 <= level <= len(STELLAR_BODIES):
-        return STELLAR_BODIES[level - 1]["bg_color"]
-    return (5, 5, 15)  # Color por defecto
-
-
-def get_stellar_accent_color(level: int) -> Tuple[int, int, int]:
-    """Obtiene el color de acento basado en el cuerpo estelar del nivel."""
-    from config.settings import STELLAR_BODIES
-    if 1 <= level <= len(STELLAR_BODIES):
-        return STELLAR_BODIES[level - 1]["accent"]
-    return (200, 200, 255)  # Color por defecto
-
-
-def get_stellar_name(level: int) -> str:
-    """Obtiene el nombre del cuerpo estelar del nivel."""
-    from config.settings import STELLAR_BODIES
-    if 1 <= level <= len(STELLAR_BODIES):
-        return STELLAR_BODIES[level - 1]["name"]
-    return "Espacio Profundo"
 
 
 def draw_intergalactic_eye_boss(screen: pygame.Surface, center: Tuple[int, int], 
@@ -967,7 +943,6 @@ def draw_meteorite(screen: pygame.Surface, center: Tuple[int, int], size: int,
         detail_density = 8
     
     # Cuerpo principal del meteorito (irregular)
-    import math
     points = []
     num_points = 8 + size * 2
     
@@ -1132,7 +1107,6 @@ def draw_power_up(screen: pygame.Surface, center: Tuple[int, int], power_type: s
         pygame.draw.circle(screen, bright_blue, (x, y), 4)
     
     # Partículas de energía alrededor
-    import random
     for i in range(int(3 + glow_intensity * 5)):
         if random.random() < 0.7:
             particle_angle = random.random() * 2 * math.pi
